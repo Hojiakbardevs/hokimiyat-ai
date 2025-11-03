@@ -7,11 +7,11 @@ import { Send } from "lucide-react";
 
 // Keep prompts stable across renders to avoid re-creating the array on each render
 const PROMPTS = [
- "Kelgan murojaatlar matnidan asosiy muammolar va takroriy mavzularni ajrating, so‘ng 5 ta tezkor chorani yozing...",
-  "Yangi normativ-huquqiy hujjatlarni qisqacha jamlang: kuchga kirish sanasi, ta’sir doirasi va 7 bandlik amal rejasini ko‘rsating...",
-  "Kiritilgan materiallardan rasmiy Ma’lumotnoma tuzing: qisqa mazmun, asosiy dalillar, xulosa va mas’ul ijrochilar...",
-  "Yig‘ilish yozuvlaridan Bayonnoma tayyorlang: kun tartibi, qarorlar, muddatlar va javobgarlar ro‘yxatini bering...",
-  "Davlat xaridi/RFP matniga javob loyihasini yozing: muvofiqlik, texnik taklif, jadvallar va kafolatlar bo‘yicha punktlar...",
+  "Kelgan murojaatlardan asosiy muammolar va takroriy mavzularni ajrating...",
+  "Yangi normativ hujjatlarni jamlang: kuchga kirish sanasi, ta'sir doirasi va amal rejasi...",
+  "Kiritilgan materiallardan rasmiy Ma'lumotnoma tuzing: mazmun, dalillar, xulosa...",
+  "Yig'ilish yozuvlaridan Bayonnoma tayyorlang: kun tartibi, qarorlar va muddatlar...",
+  "Davlat xaridi/RFP matniga javob yozing: texnik taklif, jadvallar va kafolatlar...",
 ];
 
 export default function TypingPromptInput() {
@@ -74,17 +74,18 @@ export default function TypingPromptInput() {
 
         <div className="relative">
           <Input
-            className="pr-20 py-8 rounded-xl backdrop-blur-md border-2 focus-visible:ring-0 focus-visible:ring-offset-0 
+            className="pr-20 py-8 text-sm md:text-base rounded-xl font-stretch-90% backdrop-blur-md border-2 focus-visible:ring-0 focus-visible:ring-offset-0 
             dark:bg-background/20 dark:border-white/5 dark:text-white
-            bg-white/70 border-primary/10 text-gray-800 shadow-[0_4px_20px_rgba(36,101,237,0.2)]"
-            placeholder=""
+            bg-white/80 border-primary/10 text-gray-900 shadow-[0_4px_20px_rgba(36,101,237,0.2)]
+            placeholder:text-muted-foreground/50"
+            placeholder="AI bilan muloqot boshlang..."
             value={displayText}
             readOnly
           />
           <Button
             size="icon"
             className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 w-10 
-            bg-primary/90 hover:bg-primary backdrop-blur-md shadow-md"
+            bg-primary/90 hover:bg-primary backdrop-blur-md shadow-md transition-all hover:scale-105"
             aria-label="Send message">
             <Send className="h-5 w-5" />
           </Button>

@@ -23,8 +23,8 @@ export default function CssGridBackground() {
         className="absolute inset-0 pointer-events-none z-[-1]"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(36, 101, 237, 0.25) 1.5px, transparent 1.5px),
-            linear-gradient(to bottom, rgba(36, 101, 237, 0.25) 1.5px, transparent 1.5px)
+            linear-gradient(to right, rgba(36, 101, 237, 0.15) 1.5px, transparent 1px),
+            linear-gradient(to bottom, rgba(36, 101, 237, 0.15) 1.5px, transparent 1px)
           `,
           backgroundSize: "120px 120px",
           maskImage:
