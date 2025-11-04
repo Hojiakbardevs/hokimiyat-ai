@@ -11,9 +11,9 @@ interface FrostedGlassIconProps {
 }
 
 const sizeVariants = {
-  sm: "w-10 h-10",
-  md: "w-12 h-12",
-  lg: "w-14 h-14",
+  sm: "w-12 h-12 sm:w-10 sm:h-10",
+  md: "w-14 h-14 sm:w-12 sm:h-12",
+  lg: "w-16 h-16 sm:w-14 sm:h-14",
 };
 
 export default function FrostedGlassIcon({
@@ -52,7 +52,7 @@ export default function FrostedGlassIcon({
       </div>
 
       {/* Icon content */}
-      <div className="relative z-10 transition-transform group-hover:scale-110">
+      <div className="relative z-10 transition-transform group-hover:scale-110 [&>svg]:w-6 [&>svg]:h-6 sm:[&>svg]:w-5 sm:[&>svg]:h-5">
         {icon}
       </div>
     </div>

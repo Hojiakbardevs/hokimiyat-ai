@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import FeatureCard from "./feature-card";
 import {
@@ -14,6 +15,29 @@ import {
 } from "./features-icon";
 
 export default function FeaturesSection() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Keep mobile and desktop visuals identical; only enable motion on desktop (md and up)
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)"); // Tailwind md breakpoint
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    if (mq.addEventListener) {
+      mq.addEventListener("change", update);
+    } else {
+      // Safari/older browsers
+      // @ts-ignore
+      mq.addListener(update);
+    }
+    return () => {
+      if (mq.removeEventListener) {
+        mq.removeEventListener("change", update);
+      } else {
+        // @ts-ignore
+        mq.removeListener(update);
+      }
+    };
+  }, []);
   const features = [
     {
       icon: <BotIcon />,
@@ -154,16 +178,22 @@ export default function FeaturesSection() {
           </div>
         </motion.div>
 
-        {/* Animated grid with repeating stagger effect */}
+        {/* Animated grid with repeating stagger effect (motion only on desktop) */}
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          exit="exit"
-          viewport={{ once: false, margin: "-80px", amount: 0.2 }}>
+          variants={isDesktop ? containerVariants : undefined}
+          initial={isDesktop ? "hidden" : false}
+          whileInView={isDesktop ? "visible" : undefined}
+          exit={isDesktop ? "exit" : undefined}
+          viewport={
+            isDesktop
+              ? { once: false, margin: "-80px", amount: 0.2 }
+              : undefined
+          }>
           {features.map((feature, index) => (
-            <motion.div key={index} variants={itemVariants}>
+            <motion.div
+              key={index}
+              variants={isDesktop ? itemVariants : undefined}>
               <FeatureCard
                 icon={feature.icon}
                 title={feature.title}

@@ -22,29 +22,24 @@ export default function FeatureCard({
   className,
 }: FeatureCardProps) {
   return (
-    <motion.div
-      className={cn("relative group h-full", className)}
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      viewport={{ once: true, margin: "-100px" }}>
+    <div className={cn("relative group h-full", className)}>
       <Card
         className={cn(
           "h-full overflow-hidden backdrop-blur-sm border transition-all duration-300",
           "bg-background/60 hover:shadow-lg hover:border-primary/20",
           "dark:bg-background/80 dark:hover:shadow-primary/10"
         )}>
-        <div className="p-6 h-full flex flex-col relative z-10">
+        <div className="p-5 sm:p-6 h-full flex flex-col relative z-10">
           <FrostedGlassIcon
             icon={icon}
             color={accentColor}
-            className="mb-4 self-start"
+            className="self-start m-auto mb-4"
           />
 
-          <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+          <h3 className="text-lg sm:text-xl font-bold mb-2 group-hover:text-primary transition-colors text-center">
             {title}
           </h3>
-          <p className="text-muted-foreground grow leading-relaxed">
+          <p className="text-sm sm:text-base text-muted-foreground grow leading-relaxed text-center">
             {description}
           </p>
         </div>
@@ -68,6 +63,6 @@ export default function FeatureCard({
           }}
         />
       </Card>
-    </motion.div>
+    </div>
   );
 }
