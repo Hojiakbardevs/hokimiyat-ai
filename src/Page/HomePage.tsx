@@ -1,12 +1,22 @@
 import CssGridBackground from "@/components/home/css-grid-background";
 import FeaturesSection from "@/components/home/features-section";
+import Footer from "@/components/home/footer";
 import FramerSpotlight from "@/components/home/framer-spotlight";
 import TypingPromptInput from "@/components/home/typing-prompt-input";
 import UseCases from "@/components/home/use-cases";
 import Navbar from "@/components/navbar";
 import StructuredData from "@/components/structured-data";
 import { Button } from "@/components/ui/button";
-import { Zap, Upload, FileCheck, Download } from "lucide-react";
+import {
+  Zap,
+  Upload,
+  FileCheck,
+  Download,
+  Users,
+  Database,
+  Bot,
+  Shield,
+} from "lucide-react";
 
 export const HomePage = () => {
   return (
@@ -140,6 +150,130 @@ export const HomePage = () => {
         </section>
         {/* Use Cases Section */}
         <UseCases />
+
+        {/* Aloqa va narxlash bo‘limi */}
+        <section
+          id="contact"
+          className="py-20 bg-linear-to-b from-background to-muted/30 dark:from-background dark:to-muted/10"
+          aria-labelledby="contact-heading">
+          <div className="container px-4 md:px-6 m-auto">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground mb-2">
+                  Biz bilan bog'laning
+                </div>
+                <h2
+                  id="contact-heading"
+                  className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                  Maxsus tashkilotlar uchun narxlash
+                </h2>
+                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+                  Hokimiyat AI — har bir tashkilotning o'ziga xos ehtiyojlari va
+                  miqyosiga mos maxsus narxlash paketlarini taklif etadi.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-8 lg:grid-cols-2 lg:gap-12 container max-w-8xl mx-auto ">
+              {/* Sol tomon - Features */}
+              <div className="space-y-6">
+                <h3 className="text-2xl font-bold mb-6">Nima kiritilgan?</h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <span>
+                      Cheklanmagan foydalanuvchilar soni va rollarga asoslangan
+                      kirish nazorati
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Database className="h-5 w-5 text-primary" />
+                    <span>Moslashtiriladigan bilim bazasi hajmi</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Bot className="h-5 w-5 text-primary" />
+                    <span>
+                      Barcha sun’iy intellekt (LLM) modellariga kirish
+                      imkoniyati
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <span>
+                      Tashkilot darajasidagi xavfsizlik va maxfiylik siyosati
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <p className="font-medium">
+                    Narx va texnik talablarga oid shaxsiy taklif olish uchun biz
+                    bilan bog‘laning.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center">
+                <div className="w-full max-w-md p-8 rounded-2xl bg-background/80 backdrop-blur-sm border-2 border-primary/20 shadow-lg dark:shadow-primary/5">
+                  <div className="space-y-6">
+                    <div className="text-center space-y-2">
+                      <h3 className="text-2xl font-bold">
+                        Shaxsiy taklif oling
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Tashkilotingiz ehtiyojlariga moslashtirilgan narx va
+                        yechimlar
+                      </p>
+                    </div>
+
+                    <div className="space-y-4 py-4">
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="h-2 w-2 rounded-full bg-primary"></div>
+                        <span>Bepul demo va konsultatsiya</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="h-2 w-2 rounded-full bg-primary"></div>
+                        <span>Texnik integratsiya yordami</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="h-2 w-2 rounded-full bg-primary"></div>
+                        <span>24/7 texnik qo'llab-quvvatlash</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="h-2 w-2 rounded-full bg-primary"></div>
+                        <span>O'quv va yo'riqnomalar</span>
+                      </div>
+                    </div>
+
+                    <Button className="w-full h-12 text-base bg-primary hover:bg-primary/90 dark:shadow-[0_0_15px_rgba(36,101,237,0.4)]">
+                      <a
+                        href="https://t.me/Alpha_development"
+                        target="_blank"
+                        rel="noopener noreferrer">
+                        {" "}
+                        Aloqaga chiqish
+                      </a>
+                    </Button>
+
+                    <p className="text-xs text-center text-muted-foreground">
+                      Yoki email orqali:{" "}
+                      <a
+                        href="mailto:info@airi.uz"
+                        className="text-primary hover:underline">
+                        info@airi.uz
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* footer */}
+
+        <Footer/>
       </div>
     </>
   );
