@@ -11,11 +11,6 @@ import Logoss from "@/assets/logowhite.svg"
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const navItems = [
-    { label: "Home", href: "/" },
-    { label: "About", href: "/about" },
-    { label: "Contact", href: "/contact" },
-  ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -30,16 +25,7 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <nav className="hidden md:flex gap-6" aria-label="Main Navigation">
-          {navItems.map((item, index) => (
-            <Link
-              key={index}
-              to={item.href}
-              className="text-sm font-medium transition-colors hover:text-primary">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+      
 
         <div className="flex items-center gap-4">
           <ModeToggle />
@@ -66,18 +52,7 @@ export default function Navbar() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[280px] sm:w-[350px]">
-              <nav
-                className="flex flex-col gap-3 mt-6 p-3"
-                aria-label="Mobile Navigation">
-                {navItems.map((item, index) => (
-                  <Link
-                    key={index}
-                    to={item.href}
-                    className="text-base font-medium transition-colors hover:text-primary px-2 rounded-md hover:bg-accent"
-                    onClick={() => setIsOpen(false)}>
-                    {item.label}
-                  </Link>
-                ))}
+             
                 <div className="mt-6 pt-4 border-t">
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between px-2">
@@ -87,7 +62,7 @@ export default function Navbar() {
                     <Button
                       asChild
                       className="w-full flex items-center justify-center gap-2 px-4 py-5 bg-[#1a1d21] hover:bg-[#2a2d31] text-white rounded-lg border-0 dark:bg-primary dark:hover:bg-primary/90 dark:shadow-[0_0_10px_rgba(36,101,237,0.4)]">
-                      <Link to="/contact" onClick={() => setIsOpen(false)}>
+                      <Link to="/chat-assistant" onClick={() => setIsOpen(false)}>
                         <Zap className="h-4 w-4 text-white" />
                         <div className="flex flex-col items-center">
                           <span className="text-sm font-medium">
@@ -101,7 +76,6 @@ export default function Navbar() {
                     </Button>
                   </div>
                 </div>
-              </nav>
             </SheetContent>
           </Sheet>
         </div>
