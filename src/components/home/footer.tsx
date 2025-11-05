@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-
+import Logos from "@/assets/logowhite.svg";
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -9,7 +9,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brend blok */}
           <div className="space-y-4">
-            <h3 className="text-lg font-bold">Hokimiyat AI</h3>
+            <div className="flex items-center">
+              {" "}
+              <img src={Logos} alt="Hokimiyat AI" className="w-12" />
+              <h3 className="text-lg font-bold">Hokimiyat AI</h3>
+            </div>
             <p className="text-sm text-muted-foreground">
               Davlat idoralari va yirik tashkilotlar uchun mo‘ljallangan,
               xavfsiz va moslashtiriladigan hujjatlarni avtomatlashtirish
