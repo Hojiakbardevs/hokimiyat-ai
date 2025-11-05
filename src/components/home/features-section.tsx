@@ -97,7 +97,7 @@ export default function FeaturesSection() {
     },
   ];
 
-  // Animation variants for repeating stagger effect with exit
+  // Animation variants for repeating stagger effect (run once, no exit)
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -105,13 +105,6 @@ export default function FeaturesSection() {
       transition: {
         staggerChildren: 0.08,
         delayChildren: 0.1,
-      },
-    },
-    exit: {
-      opacity: 0,
-      transition: {
-        staggerChildren: 0.05,
-        staggerDirection: -1, // Reverse order when exiting
       },
     },
   };
@@ -131,20 +124,11 @@ export default function FeaturesSection() {
         ease: [0.4, 0, 0.2, 1] as const, // easeOut cubic-bezier
       },
     },
-    exit: {
-      opacity: 0,
-      y: -20,
-      scale: 0.95,
-      transition: {
-        duration: 0.4,
-        ease: [0.4, 0, 1, 1] as const, // easeIn
-      },
-    },
   };
 
   return (
     <section
-      className="pb-20 bg-muted/50 dark:bg-muted/10"
+      className="py-20 bg-muted/50 dark:bg-muted/10"
       id="features"
       aria-labelledby="features-heading">
       <div className="container px-4 md:px-6 m-auto">
@@ -153,17 +137,15 @@ export default function FeaturesSection() {
           className="flex flex-col items-center justify-center space-y-4 text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.6 }}
-          viewport={{ once: false, margin: "-100px", amount: 0.3 }}>
+          viewport={{ once: true, margin: "-100px", amount: 0.3 }}>
           <div className="space-y-2">
             <motion.div
               className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground mb-2"
               initial={{ opacity: 0, scale: 0.8 }}
               whileInView={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              viewport={{ once: false, amount: 0.5 }}>
+              viewport={{ once: true, amount: 0.5 }}>
               Asosiy imkoniyatlar
             </motion.div>
             <h2
@@ -184,11 +166,8 @@ export default function FeaturesSection() {
           variants={isDesktop ? containerVariants : undefined}
           initial={isDesktop ? "hidden" : false}
           whileInView={isDesktop ? "visible" : undefined}
-          exit={isDesktop ? "exit" : undefined}
           viewport={
-            isDesktop
-              ? { once: false, margin: "-80px", amount: 0.2 }
-              : undefined
+            isDesktop ? { once: true, margin: "-80px", amount: 0.2 } : undefined
           }>
           {features.map((feature, index) => (
             <motion.div
