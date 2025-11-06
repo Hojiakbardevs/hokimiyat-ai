@@ -313,7 +313,6 @@ export default function ChatPage() {
 
         <main className="relative flex min-w-0 flex-1 flex-col">
           <Header
-            sidebarCollapsed={sidebarCollapsed}
             setSidebarOpen={setSidebarOpen}
             onTemplateClick={() => setIsTemplateDrawerOpen(true)}
           />

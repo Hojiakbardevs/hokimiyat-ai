@@ -185,3 +185,32 @@
   box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring) 20%, transparent);
   outline: none;
 }
+
+/* Mobile touch optimization */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* Ensure buttons are easily tappable */
+  button,
+  a,
+  input,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  /* Prevent double-tap zoom on buttons */
+  button {
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  /* Improve scroll performance */
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
