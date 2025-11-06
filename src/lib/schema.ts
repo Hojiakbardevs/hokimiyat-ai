@@ -1,6 +1,3 @@
-
-import { z } from "zod";
-
 // Template types for government documents
 export const TEMPLATE_TYPES = {
   ARIZA: 'ariza',
