@@ -182,7 +182,11 @@ export default function ChatPage() {
     ]);
   }
 
-  function sendMessage(convId: string, content: string) {
+  function sendMessage(
+    convId: string,
+    content: string,
+    attachments: File[] = []
+  ) {
     if (!content.trim()) return;
     const now = new Date().toISOString();
     const userMsg = {
@@ -190,6 +194,7 @@ export default function ChatPage() {
       role: "user",
       content,
       createdAt: now,
+      attachments: attachments.length ? attachments : undefined,
     };
 
     setConversations((prev) =>
@@ -201,7 +206,10 @@ export default function ChatPage() {
           messages: msgs,
           updatedAt: now,
           messageCount: msgs.length,
-          preview: content.slice(0, 80),
+          preview: (
+            content ||
+            (attachments.length ? `Attached ${attachments.length} file(s)` : "")
+          ).slice(0, 80),
         };
       })
     );
@@ -319,8 +327,8 @@ export default function ChatPage() {
           <ChatPane
             ref={composerRef}
             conversation={selected}
-            onSend={(content: string) =>
-              selected && sendMessage(selected.id, content)
+            onSend={(content: string, attachments: File[]) =>
+              selected && sendMessage(selected.id, content, attachments)
             }
             onEditMessage={(messageId: string, newContent: string) =>
               selected && editMessage(selected.id, messageId, newContent)

@@ -439,10 +439,10 @@ export function CustomSidebar({
             </div>
             <div className="mt-2 flex items-center gap-2 rounded-xl bg-zinc-50 p-2 dark:bg-zinc-800/60">
               <div className="grid h-8 w-8 place-items-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-white dark:text-zinc-900">
-                JD
+                HJ
               </div>
               <div className="min-w-0">
-                <div className="truncate text-sm font-medium">John Doe</div>
+                <div className="truncate text-sm font-medium">Abdulhakimov Hojiakbar</div>
                 <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                   Pro workspace
                 </div>
@@ -667,10 +667,10 @@ export function CustomSidebar({
               </div>
               <div className="mt-2 flex items-center gap-2 rounded-xl bg-zinc-50 p-2 dark:bg-zinc-800/60">
                 <div className="grid h-8 w-8 place-items-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-white dark:text-zinc-900">
-                  JD
+                  HJ
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">John Doe</div>
+                  <div className="truncate text-sm font-medium">Abdulhakimov Hojiakbar</div>
                   <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                     Pro workspace
                   </div>

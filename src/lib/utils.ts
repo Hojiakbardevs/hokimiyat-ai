@@ -65,3 +65,16 @@ export function timeAgo(date: string | Date) {
  * Misol: makeId("m") => "m8sjk23fg"
  */
 export const makeId = (p: string) => `${p}${Math.random().toString(36).slice(2, 10)}`
+
+/**
+ * Fayl o'lchamini inson o'qiy oladigan formatga aylantiradi
+ * Masalan: formatBytes(1536000) => "1.46 MB"
+ */
+export function formatBytes(bytes: number, decimals = 2) {
+  if (!+bytes) return '0 B'
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}

@@ -41,6 +41,19 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* Desktop typography: slightly larger font size without affecting mobile */
+@media (min-width: 1024px) {
+  html {
+    font-size: 17px; /* ~6% larger than default */
+  }
+}
+
+@media (min-width: 1440px) {
+  html {
+    font-size: 19px; /* a touch bigger on large desktops */
+  }
+}
+
 :root {
   --radius: 0.65rem;
   --background: oklch(1 0 0);

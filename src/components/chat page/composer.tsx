@@ -7,12 +7,12 @@ import {
   useImperativeHandle,
   useEffect,
 } from "react";
-import { Send, Loader2, Plus, Mic } from "lucide-react";
+import { Send, Loader2, Plus, Mic, X, Paperclip } from "lucide-react";
 import ComposerActionsPopover from "@/components/chat page/ComposerActionsPopover";
-import { cls } from "@/lib/utils";
+import { cls, formatBytes } from "@/lib/utils";
 
 interface ComposerProps {
-  onSend?: (text: string) => Promise<void> | void;
+  onSend?: (text: string, attachments: File[]) => Promise<void> | void;
   busy?: boolean;
 }
 
@@ -24,6 +24,9 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
   const [sending, setSending] = useState(false);
   const [lineCount, setLineCount] = useState(1);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -77,24 +80,77 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
   );
 
   async function handleSend() {
-    if (!value.trim() || sending) return;
+    if ((!value.trim() && attachments.length === 0) || sending) return;
     setSending(true);
     try {
-      await onSend?.(value);
+      await onSend?.(value, attachments);
       setValue("");
+      setAttachments([]);
       inputRef.current?.focus();
     } finally {
       setSending(false);
     }
   }
 
+  function addFiles(files: FileList | File[]) {
+    const maxPerFile = 25 * 1024 * 1024; // 25MB
+    const maxCount = 10;
+    const list = Array.from(files);
+    const filtered: File[] = [];
+    for (const f of list) {
+      if (f.size > maxPerFile) {
+        // Siz limitini oshgan faylni tashlab yuboramiz
+        continue;
+      }
+      filtered.push(f);
+      if (filtered.length + attachments.length >= maxCount) break;
+    }
+    if (filtered.length) setAttachments((prev) => [...prev, ...filtered]);
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer?.files?.length) {
+      addFiles(e.dataTransfer.files);
+    }
+  }
+
+  function onDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  }
+
+  function onDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
   return (
     <div className="border-t border-zinc-200/60 p-4 dark:border-zinc-800">
       <div
         className={cls(
-          "mx-auto flex flex-col rounded-2xl border bg-white shadow-sm dark:bg-zinc-950 transition-all duration-200",
-          "max-w-3xl border-zinc-300 dark:border-zinc-700 p-3"
-        )}>
+          "mx-auto flex flex-col rounded-2xl border bg-white shadow-sm dark:bg-zinc-950 transition-all duration-200 relative",
+          "max-w-3xl border-zinc-300 dark:border-zinc-700 p-3",
+          isDragging &&
+            "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent"
+        )}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragEnter={() => setIsDragging(true)}
+        onDragLeave={onDragLeave}>
+        {/* Drag overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-blue-500/5 backdrop-blur-[1px]">
+            <div className="rounded-full border border-blue-300/60 bg-white/80 px-3 py-1 text-xs text-blue-700 shadow-sm dark:bg-zinc-900/80 dark:text-blue-300">
+              Drop files to attach
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 relative">
           <textarea
             ref={inputRef}
@@ -119,14 +175,83 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
           />
         </div>
 
+        {/* Always-visible drop hint removed from here; moved next to + icon below */}
+
+        {/* Attachments preview */}
+        {attachments.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {attachments.map((f, idx) => (
+              <div
+                key={`${f.name}-${f.size}-${idx}`}
+                className="group inline-flex items-center gap-2 rounded-full border border-zinc-200 px-2 py-1 text-[11px] text-zinc-700 dark:border-zinc-800 dark:text-zinc-200"
+                title={f.name}>
+                <Paperclip className="h-3.5 w-3.5" />
+                <span className="max-w-48 truncate">{f.name}</span>
+                <span className="text-zinc-400">· {formatBytes(f.size)}</span>
+                <button
+                  onClick={() =>
+                    setAttachments((prev) => prev.filter((_, i) => i !== idx))
+                  }
+                  className="ml-1 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+                  aria-label="Remove attachment">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mt-2">
-          <ComposerActionsPopover>
-            <button
-              className="inline-flex shrink-0 items-center justify-center rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
-              title="Add attachment">
-              <Plus className="h-4 w-4" />
-            </button>
-          </ComposerActionsPopover>
+          <div className="flex items-center gap-2">
+            <ComposerActionsPopover>
+              <button
+                className="inline-flex shrink-0 items-center justify-center rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
+                title="Add attachment"
+                onClick={() => fileInputRef.current?.click()}>
+                <Plus className="h-4 w-4" />
+              </button>
+            </ComposerActionsPopover>
+            {/* Always-visible drop hint near + icon */}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                if (e.dataTransfer?.files?.length)
+                  addFiles(e.dataTransfer.files);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragEnter={() => setIsDragging(true)}
+              onDragLeave={onDragLeave}
+              className="flex items-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 px-3 py-2 text-xs text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-400 cursor-pointer select-none">
+              <Paperclip className="h-3.5 w-3.5" />
+              <span>Faylni tashlang yoki oching</span>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) addFiles(e.target.files);
+                // reset so same file can be re-selected
+                e.currentTarget.value = "";
+              }}
+            />
+          </div>
 
           <div className="flex items-center gap-1 shrink-0">
             <button
@@ -136,10 +261,14 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
             </button>
             <button
               onClick={handleSend}
-              disabled={sending || busy || !value.trim()}
+              disabled={
+                sending || busy || (!value.trim() && attachments.length === 0)
+              }
               className={cls(
                 "inline-flex shrink-0 items-center gap-2 rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-white dark:text-zinc-900",
-                (sending || busy || !value.trim()) &&
+                (sending ||
+                  busy ||
+                  (!value.trim() && attachments.length === 0)) &&
                   "opacity-50 cursor-not-allowed"
               )}>
               {sending || busy ? (

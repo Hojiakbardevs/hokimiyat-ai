@@ -4,7 +4,7 @@ import { useState, forwardRef, useImperativeHandle, useRef } from "react";
 import { Pencil, RefreshCw, Check, X, Square } from "lucide-react";
 import Message from "@/components/chat page/message";
 import Composer from "@/components/chat page/composer";
-import { cls, timeAgo } from "@/lib/utils";
+import { cls, timeAgo, formatBytes } from "@/lib/utils";
 
 interface ThinkingMessageProps {
   onPause: () => void;
@@ -36,6 +36,7 @@ interface Message {
   content: string;
   createdAt: string;
   editedAt?: string;
+  attachments?: File[];
 }
 
 interface Conversation {
@@ -51,7 +52,7 @@ interface Conversation {
 
 interface ChatPaneProps {
   conversation: Conversation | null;
-  onSend?: (text: string) => void;
+  onSend?: (text: string, attachments: File[]) => void;
   onEditMessage?: (messageId: string, newContent: string) => void;
   onResendMessage?: (messageId: string) => void;
   isThinking?: boolean;
@@ -180,6 +181,39 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                 ) : (
                   <Message role={m.role}>
                     <div className="whitespace-pre-wrap">{m.content}</div>
+                    {m.attachments && m.attachments.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {m.attachments.map((f, i) => (
+                          <div
+                            key={`${m.id}-att-${i}`}
+                            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-2 py-1 text-[11px] text-zinc-700 dark:border-zinc-800 dark:text-zinc-200">
+                            <span className="max-w-40 truncate" title={f.name}>
+                              {f.name}
+                            </span>
+                            <span className="text-zinc-400">
+                              · {formatBytes(f.size)}
+                            </span>
+                            <button
+                              className="ml-1 rounded-full px-1 py-0.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40"
+                              onClick={() => {
+                                const url = URL.createObjectURL(f);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = f.name;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                setTimeout(
+                                  () => URL.revokeObjectURL(url),
+                                  1000
+                                );
+                              }}>
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {m.role === "user" && (
                       <div className="mt-1 flex gap-2 text-[11px] text-zinc-500">
                         <button
@@ -207,10 +241,10 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
 
       <Composer
         ref={composerRef}
-        onSend={async (text: string) => {
-          if (!text.trim()) return;
+        onSend={async (text: string, attachments: File[]) => {
+          if (!text.trim() && attachments.length === 0) return;
           setBusy(true);
-          await onSend?.(text);
+          await onSend?.(text, attachments);
           setBusy(false);
         }}
         busy={busy}
