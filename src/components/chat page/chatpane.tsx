@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, forwardRef, useImperativeHandle, useRef } from "react";
-import { Pencil, RefreshCw, Check, X, Square } from "lucide-react";
+import { Pencil, RefreshCw, Check, X, Square, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Message from "@/components/chat page/message";
 import Composer from "@/components/chat page/composer";
 import { cls, timeAgo, formatBytes } from "@/lib/utils";
@@ -70,6 +71,7 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
   },
   ref
 ) {
+  const navigate = useNavigate();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -193,6 +195,15 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                             <span className="text-zinc-400">
                               · {formatBytes(f.size)}
                             </span>
+                            <button
+                              className="ml-1 inline-flex items-center gap-0.5 rounded-full px-1 py-0.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40"
+                              onClick={() =>
+                                navigate("/document-view", {
+                                  state: { file: f, fileName: f.name },
+                                })
+                              }>
+                              <Eye className="h-3 w-3" /> View
+                            </button>
                             <button
                               className="ml-1 rounded-full px-1 py-0.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40"
                               onClick={() => {

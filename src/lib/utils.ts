@@ -78,3 +78,29 @@ export function formatBytes(bytes: number, decimals = 2) {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
+
+/**
+ * Fayldan matn ajratib olish funksiyasi
+ * Faqat .txt va .json formatlarni qo'llab-quvvatlaydi
+ * PDF va DOCX uchun backend kerak
+ */
+export async function extractTextFromFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as string || "");
+    reader.onerror = () => reject(new Error("Faylni o'qib bo'lmadi"));
+
+    if (
+      file.type === "text/plain" ||
+      file.type === "application/json" ||
+      file.name.endsWith(".txt") ||
+      file.name.endsWith(".json")
+    ) {
+      reader.readAsText(file);
+    } else {
+      resolve(
+        "Faqat .txt va .json formatlar qo'llab-quvvatlanadi. PDF va DOCX uchun backend kerak."
+      );
+    }
+  });
+}

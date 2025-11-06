@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Header from "@/components/chat page/Header";
 import { INITIAL_TEMPLATES } from "@/lib/mockData";
 import { cls, formatBytes } from "@/lib/utils";
 import {
@@ -12,14 +11,17 @@ import {
   Download,
   Copy,
   ArrowRight,
+  ArrowLeft,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTheme } from "@/components/theme-provider";
 
 export function GeneratePage() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Theme is managed globally in ChatPage; no-op here to avoid duplication.
+  const { theme, setTheme } = useTheme();
 
   const templates = INITIAL_TEMPLATES;
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
@@ -117,7 +119,45 @@ export function GeneratePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-zinc-900">
-      <Header setSidebarOpen={() => {}} onTemplateClick={() => {}} />
+      {/* Custom Navbar */}
+      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur supports-backdrop-filter:bg-white/60 dark:border-zinc-800 dark:bg-zinc-900/80">
+        <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          {/* Left: Back button + Logo */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800">
+              <ArrowLeft className="h-4 w-4" /> Orqaga
+            </button>
+            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-purple-600 text-white font-bold text-lg shadow-md">
+                H
+              </div>
+              <div>
+                <h1 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+                  Hokimiyat AI
+                </h1>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Hujjat generatori
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Theme Toggle */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            aria-label="Toggle theme">
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </button>
+        </div>
+      </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
