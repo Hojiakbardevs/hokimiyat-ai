@@ -1,6 +1,9 @@
 import { Routes, Route } from "react-router-dom";
 import { HomePage } from "./Page/HomePage";
 import ChatPage from "./Page/ChatPage";
+import { GeneratePage } from "./Page/GeneratePage";
+import { FinalPage } from "./Page/FinalPage";
+import NotFound from "./Page/NotfoundPage";
 
 function App() {
   return (
@@ -8,6 +11,9 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/chat-assistant" element={<ChatPage />} />
+        <Route path="/generate" element={<GeneratePage />} />
+        <Route path="/final" element={<FinalPage />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   );
