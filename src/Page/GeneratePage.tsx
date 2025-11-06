@@ -16,12 +16,52 @@ import {
   Sun,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useTheme } from "@/components/theme-provider";
 
 export function GeneratePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
+
+  // Theme handling aligned with ChatPage
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved =
+        typeof window !== "undefined" && localStorage.getItem("theme");
+      if (saved) return saved;
+      if (
+        typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+      )
+        return "dark";
+      return "light";
+    } catch {
+      return "light";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (theme === "dark") document.documentElement.classList.add("dark");
+      else document.documentElement.classList.remove("dark");
+      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.style.colorScheme = theme as any;
+      localStorage.setItem("theme", theme as string);
+    } catch {}
+  }, [theme]);
+
+  useEffect(() => {
+    try {
+      const media =
+        window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+      if (!media) return;
+      const listener = (e: MediaQueryListEvent) => {
+        const saved = localStorage.getItem("theme");
+        if (!saved) setTheme(e.matches ? ("dark" as any) : ("light" as any));
+      };
+      media.addEventListener("change", listener);
+      return () => media.removeEventListener("change", listener);
+    } catch {}
+  }, []);
 
   const templates = INITIAL_TEMPLATES;
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(

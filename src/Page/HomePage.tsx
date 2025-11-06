@@ -17,6 +17,7 @@ import {
   Bot,
   Shield,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const HomePage = () => {
   return (
@@ -57,12 +58,14 @@ export const HomePage = () => {
                   <div className="absolute inset-0 bg-linear-to-r from-primary/0 via-primary/30 to-primary/0 dark:opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -translate-x-full group-hover:translate-x-full"></div>
                   <Zap className="h-5 w-5 text-white relative z-10" />
                   <div className="flex flex-col items-start relative z-10">
-                    <span className="text-[15px] font-medium">
-                      Dasturni sinab ko‘ring
-                    </span>
-                    <span className="text-xs text-gray-400 dark:text-gray-300 -mt-0.5">
-                      v1.0.0
-                    </span>
+                    <Link to="/chat-assistant">
+                      <span className="text-[15px] font-medium">
+                        Dasturni sinab ko‘ring
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-300 -mt-0.5">
+                        v1.0.0
+                      </span>
+                    </Link>
                   </div>
                 </Button>
                 <Button className="w-full sm:w-auto px-5 py-6 h-[60px] rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-transparent hover:bg-white dark:hover:bg-gray-800 text-[15px] font-medium text-foreground">
@@ -273,7 +276,7 @@ export const HomePage = () => {
 
         {/* footer */}
 
-        <Footer/>
+        <Footer />
       </div>
     </>
   );

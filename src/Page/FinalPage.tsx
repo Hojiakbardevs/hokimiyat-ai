@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, ArrowLeft } from "lucide-react";
+import { Download, ArrowLeft, Sun, Moon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import RichTextEditor from "@/components/rich-text-editor";
 import { INITIAL_TEMPLATES } from "@/lib/mockData";
@@ -43,6 +43,21 @@ export function FinalPage() {
     } catch {}
   }, [theme]);
 
+  // Keep in sync with system preference when user hasn't explicitly chosen
+  useEffect(() => {
+    try {
+      const media =
+        window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+      if (!media) return;
+      const listener = (e: MediaQueryListEvent) => {
+        const saved = localStorage.getItem("theme");
+        if (!saved) setTheme(e.matches ? "dark" : "light");
+      };
+      media.addEventListener("change", listener);
+      return () => media.removeEventListener("change", listener); 
+    } catch {}
+  }, []);
+
   function downloadTxt(filename: string, text: string) {
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -78,11 +93,25 @@ export function FinalPage() {
               )}
             </div>
           </div>
-          <button
-            onClick={() => downloadTxt(`${title || "document"}.txt`, content)}
-            className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
-            <Download className="h-4 w-4" /> Yuklab olish
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() =>
+                setTheme(theme === "dark" ? ("light" as any) : ("dark" as any))
+              }
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              aria-label="Toggle theme">
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </button>
+            <button
+              onClick={() => downloadTxt(`${title || "document"}.txt`, content)}
+              className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+              <Download className="h-4 w-4" /> Yuklab olish
+            </button>
+          </div>
         </div>
       </header>
 
@@ -92,7 +121,7 @@ export function FinalPage() {
             Hech qanday mazmun topilmadi. Avval <b>Generate</b> sahifasida
             hujjat yarating.
             <div className="mt-3">
-              <button 
+              <button
                 onClick={() => navigate("/generate")}
                 className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
                 Generate sahifasiga o'tish
