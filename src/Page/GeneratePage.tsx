@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/chat page/Header";
 import { INITIAL_TEMPLATES } from "@/lib/mockData";
 import { cls, formatBytes } from "@/lib/utils";
@@ -13,10 +13,13 @@ import {
   Copy,
   ArrowRight,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export function GeneratePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Theme is managed globally in ChatPage; no-op here to avoid duplication.
 
   const templates = INITIAL_TEMPLATES;
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
@@ -33,6 +36,42 @@ export function GeneratePage() {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string>("");
+
+  // If navigated from Chat with content/attachments, preload and auto-generate
+  useEffect(() => {
+    const st = (location as any).state as
+      | {
+          from?: string;
+          content?: string;
+          attachments?: File[];
+          title?: string;
+        }
+      | undefined;
+    if (!st) return;
+
+    if (st.title) setTitle(st.title);
+    if (st.content) setPrompt(st.content);
+    if (st.attachments && st.attachments.length) {
+      // dedupe by name+size to be safe
+      const incoming = st.attachments;
+      const merged = [...attachments];
+      for (const f of incoming) {
+        if (!merged.some((m) => m.name === f.name && m.size === f.size)) {
+          merged.push(f);
+        }
+      }
+      setAttachments(merged);
+    }
+
+    // Auto-generate once preloaded
+    if (st.content || (st.attachments && st.attachments.length)) {
+      // small delay to ensure state applied
+      setTimeout(() => {
+        handleGenerate();
+      }, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function addFiles(files: FileList | File[]) {
     const maxPerFile = 25 * 1024 * 1024;
@@ -86,8 +125,7 @@ export function GeneratePage() {
             Hujjat yaratish
           </h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Backend yo‘q bo‘lsa ham, tayyor shablonlardan foydalangan holda UI
-            darajasida natija hosil qilamiz.
+            Tayyor shablonlardan foydalangan holda yangi hujjat yarating.
           </p>
         </div>
 
@@ -100,7 +138,7 @@ export function GeneratePage() {
             </label>
             <div className="relative">
               <select
-                className="w-full appearance-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition hover:bg-zinc-50 focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                className="w-full appearance-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition hover:bg-zinc-50 focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus:ring-zinc-600"
                 value={selectedTemplateId}
                 onChange={(e) => setSelectedTemplateId(e.target.value)}>
                 {templates.map((t) => (
@@ -119,20 +157,20 @@ export function GeneratePage() {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Masalan: Yig‘ilish bayonnomasi (06.11.2025)"
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition hover:bg-zinc-50 focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              placeholder="Masalan: Yig'ilish bayonnomasi (06.11.2025)"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition hover:bg-zinc-50 focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus:ring-zinc-600"
             />
 
             {/* Prompt */}
             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-              Ko‘rsatma / izoh
+              Ko'rsatma / izoh
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={6}
-              placeholder="Qanday o‘zgartirishlar kerak, bandlar, ohang va h.k."
-              className="w-full resize-y rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition hover:bg-zinc-50 focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              placeholder="Qanday o'zgartirishlar kerak, bandlar, ohang va h.k."
+              className="w-full resize-y rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition hover:bg-zinc-50 focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus:ring-zinc-600"
             />
 
             {/* Attachments */}
@@ -151,13 +189,13 @@ export function GeneratePage() {
               className={cls(
                 "rounded-xl border-2 border-dashed px-4 py-4 text-xs text-zinc-600 dark:text-zinc-400",
                 isDragging
-                  ? "border-blue-500 bg-blue-500/5"
+                  ? "border-zinc-500 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800"
                   : "border-zinc-300 dark:border-zinc-700"
               )}>
               <div className="flex items-center gap-2">
                 <Paperclip className="h-4 w-4" />
                 <span>Fayl(lar)ni bu yerga tashlang yoki tanlang</span>
-                <label className="ml-auto inline-flex cursor-pointer items-center gap-2 rounded-full border border-zinc-300 bg-white px-2 py-1 text-[11px] hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+                <label className="ml-auto inline-flex cursor-pointer items-center gap-2 rounded-full border border-zinc-300 bg-white px-2 py-1 text-[11px] hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800">
                   Fayl tanlash
                   <input
                     type="file"
@@ -184,7 +222,7 @@ export function GeneratePage() {
                         · {formatBytes(f.size)}
                       </span>
                       <button
-                        className="ml-1 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+                        className="ml-1 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                         onClick={() =>
                           setAttachments((prev) =>
                             prev.filter((_, i) => i !== idx)
@@ -204,8 +242,8 @@ export function GeneratePage() {
                 disabled={loading}
                 onClick={handleGenerate}
                 className={cls(
-                  "inline-flex items-center gap-2 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-white dark:text-zinc-900",
-                  loading && "opacity-50"
+                  "inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-400",
+                  loading && "opacity-50 cursor-not-allowed"
                 )}>
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -221,7 +259,7 @@ export function GeneratePage() {
                   setAttachments([]);
                   setResult("");
                 }}
-                className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm">
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
                 Clear
               </button>
             </div>
@@ -235,7 +273,7 @@ export function GeneratePage() {
               </h2>
               <div className="flex items-center gap-1">
                 <button
-                  className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                   disabled={!result}
                   onClick={() => {
                     navigator.clipboard?.writeText(result);
@@ -243,7 +281,7 @@ export function GeneratePage() {
                   <Copy className="h-3.5 w-3.5" /> Nusxa olish
                 </button>
                 <button
-                  className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                   disabled={!result}
                   onClick={() =>
                     downloadTxt(
@@ -258,7 +296,7 @@ export function GeneratePage() {
 
             <div className="flex-1 overflow-auto rounded-xl border border-zinc-200 bg-white p-3 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
               {loading ? (
-                <div className="flex items-center gap-2 text-zinc-500">
+                <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
                   <Loader2 className="h-4 w-4 animate-spin" /> Generatsiya
                   qilinmoqda...
                 </div>
@@ -267,8 +305,8 @@ export function GeneratePage() {
                   {result}
                 </pre>
               ) : (
-                <div className="text-xs text-zinc-500">
-                  Natija bu yerda ko‘rinadi.
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Natija bu yerda ko'rinadi.
                 </div>
               )}
             </div>
@@ -285,8 +323,8 @@ export function GeneratePage() {
                     },
                   })
                 }
-                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-500 disabled:opacity-50">
-                Final sahifaga o‘tish <ArrowRight className="h-4 w-4" />
+                className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+                Final sahifaga o'tish <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>

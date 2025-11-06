@@ -7,7 +7,16 @@ import {
   useImperativeHandle,
   useEffect,
 } from "react";
-import { Send, Loader2, Plus, Mic, X, Paperclip } from "lucide-react";
+import {
+  Send,
+  Loader2,
+  Plus,
+  Mic,
+  X,
+  Paperclip,
+  ArrowRight,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import ComposerActionsPopover from "@/components/chat page/ComposerActionsPopover";
 import { cls, formatBytes } from "@/lib/utils";
 
@@ -20,6 +29,7 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
   { onSend, busy },
   ref
 ) {
+  const navigate = useNavigate();
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
   const [lineCount, setLineCount] = useState(1);
@@ -90,6 +100,18 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
     } finally {
       setSending(false);
     }
+  }
+
+  function openInGenerate() {
+    if (!value.trim() && attachments.length === 0) return;
+    // Pass current input and attachments to Generate page and let it auto-run
+    navigate("/generate", {
+      state: {
+        from: "chat",
+        content: value,
+        attachments,
+      },
+    });
   }
 
   function addFiles(files: FileList | File[]) {
@@ -254,6 +276,18 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={openInGenerate}
+              disabled={!value.trim() && attachments.length === 0}
+              className={cls(
+                "inline-flex items-center justify-center rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors",
+                !value.trim() &&
+                  attachments.length === 0 &&
+                  "opacity-50 cursor-not-allowed"
+              )}
+              title="Open in Generate">
+              <ArrowRight className="h-4 w-4" />
+            </button>
             <button
               className="inline-flex items-center justify-center rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
               title="Voice input">
