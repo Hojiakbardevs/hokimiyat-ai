@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, forwardRef, useImperativeHandle, useRef } from "react";
-import { Pencil, RefreshCw, Check, X, Square, Eye } from "lucide-react";
+import {
+  Pencil,
+  RefreshCw,
+  Check,
+  X,
+  Square,
+  Eye,
+  Download,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Message from "@/components/chat page/message";
 import Composer from "@/components/chat page/composer";
@@ -122,7 +130,7 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
-      <div className="flex-1 space-y-5 overflow-y-auto px-4 py-6 sm:px-8">
+      <div className="flex-1 space-y-5 overflow-y-auto px-4 py-6 sm:px-8 bg-background/60 scrollbar-thin">
         <div className="mb-2 text-3xl font-serif tracking-tight sm:text-4xl md:text-5xl">
           <span className="block leading-[1.05] font-sans text-2xl">
             {conversation.title}
@@ -132,18 +140,18 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
           Updated {timeAgo(conversation.updatedAt)} · {count} messages
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-2 border-b border-zinc-200 pb-5 dark:border-zinc-800">
+        <div className="mb-6 flex flex-wrap gap-2 border-b border-border pb-5">
           {tags.map((t) => (
             <span
               key={t}
-              className="inline-flex items-center rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-700 dark:border-zinc-800 dark:text-zinc-200">
+              className="inline-flex items-center rounded-full border border-border bg-muted px-3 py-1 text-xs text-foreground/80">
               {t}
             </span>
           ))}
         </div>
 
         {messages.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-zinc-300 p-6 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+          <div className="rounded-2xl border border-dashed border-border bg-muted p-6 text-sm text-muted-foreground">
             No messages yet. Say hello to start.
           </div>
         ) : (
@@ -188,15 +196,15 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                         {m.attachments.map((f, i) => (
                           <div
                             key={`${m.id}-att-${i}`}
-                            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-2 py-1 text-[11px] text-zinc-700 dark:border-zinc-800 dark:text-zinc-200">
+                            className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-2 py-1 text-[11px] text-foreground/80">
                             <span className="max-w-40 truncate" title={f.name}>
                               {f.name}
                             </span>
-                            <span className="text-zinc-400">
+                            <span className="text-muted-foreground">
                               · {formatBytes(f.size)}
                             </span>
                             <button
-                              className="ml-1 inline-flex items-center gap-0.5 rounded-full px-1 py-0.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40"
+                              className="ml-1 inline-flex items-center gap-1 rounded-full border border-border bg-card/80 px-2 py-0.5 text-[11px] text-foreground hover:bg-muted transition"
                               onClick={() =>
                                 navigate("/document-view", {
                                   state: { file: f, fileName: f.name },
@@ -205,7 +213,7 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                               <Eye className="h-3 w-3" /> View
                             </button>
                             <button
-                              className="ml-1 rounded-full px-1 py-0.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40"
+                              className="ml-1 inline-flex items-center gap-1 rounded-full border border-border bg-card/80 px-2 py-0.5 text-[11px] text-foreground hover:bg-muted transition"
                               onClick={() => {
                                 const url = URL.createObjectURL(f);
                                 const a = document.createElement("a");
@@ -219,21 +227,21 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                                   1000
                                 );
                               }}>
-                              Download
+                              <Download className="h-3 w-3" /> Download
                             </button>
                           </div>
                         ))}
                       </div>
                     )}
                     {m.role === "user" && (
-                      <div className="mt-1 flex gap-2 text-[11px] text-zinc-500">
+                      <div className="mt-1 flex gap-2 text-[11px]">
                         <button
-                          className="inline-flex items-center gap-1 hover:underline"
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-card/70 px-2 py-1 text-foreground/80 hover:bg-muted transition"
                           onClick={() => startEdit(m)}>
                           <Pencil className="h-3.5 w-3.5" /> Edit
                         </button>
                         <button
-                          className="inline-flex items-center gap-1 hover:underline"
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-card/70 px-2 py-1 text-foreground/80 hover:bg-muted transition"
                           onClick={() => onResendMessage?.(m.id)}>
                           <RefreshCw className="h-3.5 w-3.5" /> Resend
                         </button>

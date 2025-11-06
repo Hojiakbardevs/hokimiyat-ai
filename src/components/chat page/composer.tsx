@@ -155,8 +155,8 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
     <div className="border-t border-zinc-200/60 p-4 dark:border-zinc-800">
       <div
         className={cls(
-          "mx-auto flex flex-col rounded-2xl border bg-white shadow-sm dark:bg-zinc-950 transition-all duration-200 relative",
-          "max-w-3xl border-zinc-300 dark:border-zinc-700 p-3",
+          "mx-auto flex flex-col rounded-2xl border bg-card shadow-sm dark:bg-card transition-all duration-200 relative",
+          "max-w-3xl border-border p-3",
           isDragging &&
             "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent"
         )}
@@ -205,16 +205,18 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
             {attachments.map((f, idx) => (
               <div
                 key={`${f.name}-${f.size}-${idx}`}
-                className="group inline-flex items-center gap-2 rounded-full border border-zinc-200 px-2 py-1 text-[11px] text-zinc-700 dark:border-zinc-800 dark:text-zinc-200"
+                className="group inline-flex items-center gap-2 rounded-full border border-border bg-muted px-2 py-1 text-[11px] text-foreground/80"
                 title={f.name}>
                 <Paperclip className="h-3.5 w-3.5" />
                 <span className="max-w-48 truncate">{f.name}</span>
-                <span className="text-zinc-400">· {formatBytes(f.size)}</span>
+                <span className="text-muted-foreground">
+                  · {formatBytes(f.size)}
+                </span>
                 <button
                   onClick={() =>
                     setAttachments((prev) => prev.filter((_, i) => i !== idx))
                   }
-                  className="ml-1 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+                  className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-card hover:text-foreground transition"
                   aria-label="Remove attachment">
                   <X className="h-3 w-3" />
                 </button>
@@ -227,7 +229,7 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
           <div className="flex items-center gap-2">
             <ComposerActionsPopover>
               <button
-                className="inline-flex shrink-0 items-center justify-center rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
+                className="inline-flex shrink-0 items-center justify-center rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition"
                 title="Add attachment"
                 onClick={() => fileInputRef.current?.click()}>
                 <Plus className="h-4 w-4" />
@@ -258,7 +260,7 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
               }}
               onDragEnter={() => setIsDragging(true)}
               onDragLeave={onDragLeave}
-              className="flex items-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 px-3 py-2 text-xs text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-400 cursor-pointer select-none">
+              className="flex items-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted px-3 py-2 text-xs text-muted-foreground hover:border-ring/40 cursor-pointer select-none">
               <Paperclip className="h-3.5 w-3.5" />
               <span>Faylni tashlang yoki oching</span>
             </div>
@@ -280,7 +282,7 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
               onClick={openInGenerate}
               disabled={!value.trim() && attachments.length === 0}
               className={cls(
-                "inline-flex items-center justify-center rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors",
+                "inline-flex items-center justify-center rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition",
                 !value.trim() &&
                   attachments.length === 0 &&
                   "opacity-50 cursor-not-allowed"
@@ -289,7 +291,7 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
               <ArrowRight className="h-4 w-4" />
             </button>
             <button
-              className="inline-flex items-center justify-center rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
+              className="inline-flex items-center justify-center rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition"
               title="Voice input">
               <Mic className="h-4 w-4" />
             </button>
@@ -299,7 +301,7 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
                 sending || busy || (!value.trim() && attachments.length === 0)
               }
               className={cls(
-                "inline-flex shrink-0 items-center gap-2 rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-white dark:text-zinc-900",
+                "inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-2 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 (sending ||
                   busy ||
                   (!value.trim() && attachments.length === 0)) &&
@@ -315,19 +317,12 @@ const Composer = forwardRef<any, ComposerProps>(function Composer(
         </div>
       </div>
 
-      <div className="mx-auto mt-2 max-w-3xl px-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+      <div className="mx-auto mt-2 max-w-3xl px-1 text-[11px] text-muted-foreground">
         Press{" "}
-        <kbd className="rounded border border-zinc-300 bg-zinc-50 px-1 dark:border-zinc-600 dark:bg-zinc-800">
-          Enter
-        </kbd>{" "}
+        <kbd className="rounded border border-border bg-muted px-1">Enter</kbd>{" "}
         to send ·{" "}
-        <kbd className="rounded border border-zinc-300 bg-zinc-50 px-1 dark:border-zinc-600 dark:bg-zinc-800">
-          Shift
-        </kbd>
-        +
-        <kbd className="rounded border border-zinc-300 bg-zinc-50 px-1 dark:border-zinc-600 dark:bg-zinc-800">
-          Enter
-        </kbd>{" "}
+        <kbd className="rounded border border-border bg-muted px-1">Shift</kbd>+
+        <kbd className="rounded border border-border bg-muted px-1">Enter</kbd>{" "}
         for newline
       </div>
     </div>

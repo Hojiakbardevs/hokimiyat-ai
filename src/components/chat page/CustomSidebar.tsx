@@ -279,7 +279,7 @@ export function CustomSidebar({
 
           <div className="px-3 pt-3">
             <label htmlFor="search" className="sr-only">
-              Search conversations
+              Ma'lumotlarni qidirish
             </label>
             <div className="relative">
               <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
@@ -308,7 +308,7 @@ export function CustomSidebar({
             </button>
           </div>
 
-          <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2 pb-4">
+          <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2 pb-4 scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
             <SidebarSection
               icon={<Star className="h-4 w-4" />}
               title="PINNED CHATS"
@@ -442,7 +442,9 @@ export function CustomSidebar({
                 HJ
               </div>
               <div className="min-w-0">
-                <div className="truncate text-sm font-medium">Abdulhakimov Hojiakbar</div>
+                <div className="truncate text-sm font-medium">
+                  Abdulhakimov Hojiakbar
+                </div>
                 <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                   Pro workspace
                 </div>
@@ -536,7 +538,7 @@ export function CustomSidebar({
               </button>
             </div>
 
-            <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2 pb-4">
+            <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2 pb-4 scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
               <SidebarSection
                 icon={<Star className="h-4 w-4" />}
                 title="PINNED CHATS"
@@ -670,7 +672,9 @@ export function CustomSidebar({
                   HJ
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">Abdulhakimov Hojiakbar</div>
+                  <div className="truncate text-sm font-medium">
+                    Abdulhakimov Hojiakbar
+                  </div>
                   <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                     Pro workspace
                   </div>
