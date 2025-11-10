@@ -14,6 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { extractTextFromFile } from "@/lib/utils";
+import { createDocument } from "@/api/documents";
+import { toast } from "sonner";
 
 export function DocumentViewPage() {
   const navigate = useNavigate();
@@ -27,6 +29,7 @@ export function DocumentViewPage() {
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(true);
   const [fileName, setFileName] = useState<string>("Document");
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!state?.file) {
@@ -34,6 +37,7 @@ export function DocumentViewPage() {
       return;
     }
     setFileName(state.fileName || state.file.name || "Document");
+    setCurrentFile(state.file);
     extractDocument(state.file);
   }, [state, navigate]);
 
@@ -52,15 +56,43 @@ export function DocumentViewPage() {
   }
 
   async function handleGenerate() {
-    if (!originalText.trim() || loading) return;
+    if (!originalText.trim() || loading || !currentFile) return;
     setLoading(true);
-    // Mock AI response (simulyatsiya)
-    await new Promise((r) => setTimeout(r, 1500));
-    const mockResponse = `AI tahlil:\n\nHujjatda ${
-      originalText.split(" ").length
-    } so'z mavjud.\n\nAsosiy g'oyalar:\n- Hujjat tuzilishi aniq va mantiqiy.\n- Muhim ma'lumotlar ajratilgan.\n\nTavsiyalar:\n- Qo'shimcha tafsilotlar qo'shish mumkin.\n- Format va uslubni tekshirish tavsiya etiladi.`;
-    setGeneratedText(mockResponse);
-    setLoading(false);
+    try {
+      // Backend'ga hujjatni yuboring va AI tahlilini oling
+      const response = await createDocument({
+        original_file: currentFile,
+        content: originalText,
+        description: `AI tahlil: ${fileName}`,
+        template_type: "ariza", // default, keyin o'zgartirishingiz mumkin
+        language_code: "uz",
+        script_type: "latin",
+      });
+
+      console.log("Document created:", response);
+
+      // Backend javobidan AI tahlilini olish
+      if (response.content) {
+        setGeneratedText(response.content);
+        toast.success("AI tahlil muvaffaqiyatli yaratildi!");
+      } else if (
+        response.status === "pending" ||
+        response.status === "processing"
+      ) {
+        toast.info("Hujjat tahlil qilinmoqda, iltimos biroz kuting...");
+        setGeneratedText("Hujjat backend'da tahlil qilinmoqda...");
+      } else {
+        throw new Error("Backend AI tahlilini qaytarmadi");
+      }
+    } catch (error: any) {
+      console.error("AI tahlil xatosi:", error);
+      toast.error(error.message || "AI tahlilda xatolik yuz berdi");
+      setGeneratedText(
+        "Xatolik: " + (error.message || "Tahlil amalga oshmadi")
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   function downloadTxt(filename: string, text: string) {

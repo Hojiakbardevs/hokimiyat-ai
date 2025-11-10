@@ -12,6 +12,8 @@ import Header from "@/components/chat page/Header";
 import ChatPane from "@/components/chat page/chatpane";
 import { CustomSidebar } from "@/components/chat page/CustomSidebar";
 import TemplateDrawer from "@/components/chat page/TemplateDrawer";
+import { chatCompletion } from "@/api/chat";
+import { toast } from "sonner";
 
 export default function ChatPage() {
   const [theme, setTheme] = useState(() => {
@@ -182,7 +184,7 @@ export default function ChatPage() {
     ]);
   }
 
-  function sendMessage(
+  async function sendMessage(
     convId: string,
     content: string,
     attachments: File[] = []
@@ -191,12 +193,13 @@ export default function ChatPage() {
     const now = new Date().toISOString();
     const userMsg = {
       id: Math.random().toString(36).slice(2),
-      role: "user",
+      role: "user" as const,
       content,
       createdAt: now,
       attachments: attachments.length ? attachments : undefined,
     };
 
+    // Optimistic user message append
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== convId) return c;
@@ -217,32 +220,63 @@ export default function ChatPage() {
     setIsThinking(true);
     setThinkingConvId(convId);
 
-    const currentConvId = convId;
-    setTimeout(() => {
-      // Always clear thinking state and generate response for this specific conversation
+    try {
+      // Backend expects simple message + system_prompt format
+      const payload = {
+        message: content,
+        system_prompt:
+          "Siz hokimiyat hujjatlari bilan ishlaydigan yordamchi AI assistantsiz. Foydalanuvchilarga rasmiy hujjatlar tayyorlashda yordam bering.",
+      };
+      const res = await chatCompletion(payload);
+
+      // Debug: Log full response to see what backend returns
+      console.log("Chat response:", res);
+
+      // Try multiple possible response fields
+      const text =
+        res?.response ||
+        res?.message ||
+        res?.content ||
+        res?.reply ||
+        res?.output ||
+        res?.text ||
+        (typeof res === "string" ? res : null) ||
+        JSON.stringify(res) ||
+        "Javob topilmadi.";
+
+      console.log("Extracted text:", text);
+      appendAssistant(convId, text);
+    } catch (e: any) {
+      const errText = e?.message || "Server xatosi";
+      appendAssistant(convId, `⚠️ Xato: ${errText}`);
+      toast.error(errText);
+    } finally {
       setIsThinking(false);
       setThinkingConvId(null);
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id !== currentConvId) return c;
-          const ack = `Got it — I'll help with that.`;
-          const asstMsg = {
-            id: Math.random().toString(36).slice(2),
-            role: "assistant",
-            content: ack,
-            createdAt: new Date().toISOString(),
-          };
-          const msgs = [...(c.messages || []), asstMsg];
-          return {
-            ...c,
-            messages: msgs,
-            updatedAt: new Date().toISOString(),
-            messageCount: msgs.length,
-            preview: asstMsg.content.slice(0, 80),
-          };
-        })
-      );
-    }, 2000);
+    }
+  }
+
+  function appendAssistant(convId: string, content: string) {
+    const now = new Date().toISOString();
+    const asstMsg = {
+      id: Math.random().toString(36).slice(2),
+      role: "assistant" as const,
+      content,
+      createdAt: now,
+    };
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== convId) return c;
+        const msgs = [...(c.messages || []), asstMsg];
+        return {
+          ...c,
+          messages: msgs,
+          updatedAt: now,
+          messageCount: msgs.length,
+          preview: asstMsg.content.slice(0, 80),
+        };
+      })
+    );
   }
 
   function editMessage(convId: string, messageId: string, newContent: string) {
@@ -262,11 +296,11 @@ export default function ChatPage() {
     );
   }
 
-  function resendMessage(convId: string, messageId: string) {
+  async function resendMessage(convId: string, messageId: string) {
     const conv = conversations.find((c) => c.id === convId);
     const msg = conv?.messages?.find((m) => m.id === messageId);
     if (!msg) return;
-    sendMessage(convId, msg.content);
+    await sendMessage(convId, msg.content);
   }
 
   function pauseThinking() {
