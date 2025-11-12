@@ -5,22 +5,9 @@ import {
   Menu,
   ChevronDown,
   FileText,
-  LogOut,
-  User,
 } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import GhostIconButton from "@/components/chat page/GhostIconButton";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -33,13 +20,6 @@ export default function Header({
 }: HeaderProps) {
   const [selectedBot, setSelectedBot] = useState("GPT-5");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
 
   const chatbots = [
     { name: "GPT-5", icon: "🤖" },
@@ -104,28 +84,6 @@ export default function Header({
           <FileText className="h-4 w-4" />
           <span className="hidden sm:inline">Templates</span>
         </button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                  <User className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Mening hisobim</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="text-red-600 dark:text-red-400 cursor-pointer">
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Chiqish</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
 
         <GhostIconButton label="More">
           <MoreHorizontal className="h-4 w-4" />

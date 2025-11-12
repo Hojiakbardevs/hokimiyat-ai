@@ -7,6 +7,8 @@ export const API = {
     ACCOUNTS_LOGIN: "/accounts/login/",
     ACCOUNTS_REGISTER: "/accounts/register/",
     ACCOUNTS_USERS: "/accounts/users/",
+    USERS_ME: "/accounts/me/",
+    USERS: "/accounts/users/",
     DOCUMENTS: "/documents/",
     CHAT: "/chat/",
 } as const;

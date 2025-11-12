@@ -132,6 +132,70 @@
   }
 }
 
+/* Custom button and component styles using CSS variables */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: color-mix(in oklch, var(--color-primary) 90%, black);
+}
+
+.sidebar-bg {
+  background-color: var(--color-background);
+  border-color: var(--color-border);
+}
+
+.sidebar-button {
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  transition: background-color 0.2s;
+}
+
+.sidebar-button:hover {
+  background-color: var(--color-accent);
+}
+
+.sidebar-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+
+.sidebar-item {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.sidebar-item:hover {
+  background-color: var(--color-accent);
+}
+
+.sidebar-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+
+.text-muted {
+  color: var(--color-muted-foreground);
+}
+
+.bg-muted {
+  background-color: var(--color-muted);
+}
+
+.border-default {
+  border-color: var(--color-border);
+}
+
+.user-avatar {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
 /* Grid backgrounds & frosted glass helpers */
 /* Light mode grid background */
 .grid-background {

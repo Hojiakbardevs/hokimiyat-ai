@@ -11,8 +11,9 @@ import {
   FolderIcon,
   FileText,
   Settings,
+  LogOut,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cls } from "@/lib/utils";
 import SidebarSection from "./SidebarSection";
 import ConversationRow from "./ConversationRow";
@@ -23,8 +24,20 @@ import CreateFolderModal from "./CreateFolderModal";
 import CreateTemplateModal from "./CreateTemplateModal";
 import SearchModal from "./SearchModal";
 import SettingsPopover from "./SettingsPopover";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Logoss from "@/assets/logowhite.svg";
+import { useAuth } from "@/hooks/useAuth";
+import { getMe, type UserProfile } from "@/api/users";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 interface CustomSidebarProps {
   open: boolean;
   onClose: () => void;
@@ -82,6 +95,118 @@ export function CustomSidebar({
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  const { logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!isAuthenticated) {
+        console.log("❌ User not authenticated, skipping profile fetch");
+        return;
+      }
+
+      const token = localStorage.getItem("access_token");
+      console.log("🔑 Access Token exists:", !!token);
+
+      if (!token) {
+        console.log("❌ No access token found in localStorage");
+        return;
+      }
+
+      try {
+        console.log("📡 Fetching user profile from API...");
+
+        const profile = await getMe();
+
+        console.log("✅ User profile fetched successfully:", profile);
+        console.log("🆔 ID:", profile.id);
+        console.log("� Phone:", profile.phone);
+        console.log("👨 First Name:", profile.first_name);
+        console.log("👨 Last Name:", profile.last_name);
+
+        setUserProfile(profile);
+      } catch (error) {
+        console.error("❌ Failed to fetch user profile:", error);
+        console.error("Error details:", {
+          message: (error as any)?.message,
+          response: (error as any)?.response,
+          status: (error as any)?.status,
+        });
+
+        // Agar token muammosi bo'lsa, logout qil
+        if (
+          (error as any)?.message?.includes("401") ||
+          (error as any)?.message?.includes("unauthorized")
+        ) {
+          console.log("🚪 Token invalid, logging out...");
+          await logout();
+          navigate("/login");
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [isAuthenticated, logout, navigate]);
+
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = async () => {
+    await logout();
+    navigate("/login");
+    setShowLogoutDialog(false);
+  };
+
+  const getUserInitials = () => {
+    if (!userProfile) return "??";
+
+    const firstName = userProfile.first_name || "";
+    const lastName = userProfile.last_name || "";
+
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    }
+
+    if (firstName) {
+      return firstName.substring(0, 2).toUpperCase();
+    }
+
+    if (lastName) {
+      return lastName.substring(0, 2).toUpperCase();
+    }
+
+    return "??";
+  };
+
+  const getUserFullName = () => {
+    if (!userProfile) return "Loading...";
+
+    const firstName = userProfile.first_name || "";
+    const lastName = userProfile.last_name || "";
+
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    }
+
+    if (firstName) {
+      return firstName;
+    }
+
+    if (lastName) {
+      return lastName;
+    }
+
+    if (userProfile.phone) {
+      return userProfile.phone;
+    }
+
+    return "User";
+  };
 
   const getConversationsByFolder = (folderName: string) => {
     return conversations.filter((conv) => conv.folder === folderName);
@@ -165,11 +290,11 @@ export function CustomSidebar({
         initial={{ width: 320 }}
         animate={{ width: 64 }}
         transition={{ type: "spring", stiffness: 260, damping: 28 }}
-        className="z-50 flex h-full shrink-0 flex-col border-r border-zinc-200/60 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex items-center justify-center border-b border-zinc-200/60 px-3 py-3 dark:border-zinc-800">
+        className="z-50 flex h-full shrink-0 flex-col border-r border-border bg-background">
+        <div className="flex items-center justify-center border-b border-border px-3 py-3">
           <button
             onClick={() => setSidebarCollapsed(false)}
-            className="rounded-xl p-2 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800"
+            className="rounded-xl p-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{ WebkitTapHighlightColor: "transparent" }}
             aria-label="Open sidebar"
             title="Open sidebar">
@@ -180,7 +305,7 @@ export function CustomSidebar({
         <div className="flex flex-col items-center gap-4 pt-4">
           <button
             onClick={createNewChat}
-            className="rounded-xl p-2 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800"
+            className="sidebar-button"
             style={{ WebkitTapHighlightColor: "transparent" }}
             title="New Chat">
             <Plus className="h-5 w-5" />
@@ -188,23 +313,19 @@ export function CustomSidebar({
 
           <button
             onClick={() => setShowSearchModal(true)}
-            className="rounded-xl p-2 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800"
+            className="sidebar-button"
             style={{ WebkitTapHighlightColor: "transparent" }}
             title="Search">
             <SearchIcon className="h-5 w-5" />
           </button>
 
-          <button
-            className="rounded-xl p-2 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800"
-            title="Folders">
+          <button className="sidebar-button" title="Folders">
             <FolderIcon className="h-5 w-5" />
           </button>
 
           <div className="mt-auto mb-4">
             <SettingsPopover>
-              <button
-                className="rounded-xl p-2 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800"
-                title="Settings">
+              <button className="sidebar-button" title="Settings">
                 <Settings className="h-5 w-5" />
               </button>
             </SettingsPopover>
@@ -244,7 +365,7 @@ export function CustomSidebar({
       {open && (
         <aside
           className={cls(
-            "z-50 flex md:hidden h-full w-80 shrink-0 flex-col border-r border-zinc-200/60 bg-white dark:border-zinc-800 dark:bg-zinc-900",
+            "z-50 flex md:hidden h-full w-80 shrink-0 flex-col border-r border-border bg-background",
             "fixed inset-y-0 left-0"
           )}
           style={{
@@ -252,7 +373,7 @@ export function CustomSidebar({
             WebkitTapHighlightColor: "transparent",
           }}
           onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2 border-b border-zinc-200/60 px-3 py-3 dark:border-zinc-800">
+          <div className="flex items-center gap-2 border-b border-border px-3 py-3">
             <div className="flex items-center gap-2">
               <Link
                 to="/"
@@ -269,7 +390,7 @@ export function CustomSidebar({
                   e.stopPropagation();
                   onClose();
                 }}
-                className="rounded-xl p-2 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800"
+                className="sidebar-button"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Close sidebar">
                 <PanelLeftClose className="h-5 w-5" />
@@ -282,7 +403,7 @@ export function CustomSidebar({
               Ma'lumotlarni qidirish
             </label>
             <div className="relative">
-              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 id="search"
                 ref={searchRef}
@@ -292,7 +413,7 @@ export function CustomSidebar({
                 placeholder="Search…"
                 onClick={() => setShowSearchModal(true)}
                 onFocus={() => setShowSearchModal(true)}
-                className="w-full rounded-full border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-950/50"
+                className="w-full rounded-full border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none ring-0 placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               />
             </div>
@@ -301,8 +422,10 @@ export function CustomSidebar({
           <div className="px-3 pt-3">
             <button
               onClick={createNewChat}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
-              style={{ WebkitTapHighlightColor: "transparent" }}
+              className="btn-primary flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-sm focus-visible:outline-none focus-visible:ring-2"
+              style={{
+                WebkitTapHighlightColor: "transparent",
+              }}
               title="New Chat (⌘N)">
               <Plus className="h-4 w-4" /> Start New Chat
             </button>
@@ -317,7 +440,7 @@ export function CustomSidebar({
                 setCollapsed((s: any) => ({ ...s, pinned: !s.pinned }))
               }>
               {pinned.length === 0 ? (
-                <div className="select-none rounded-lg border border-dashed border-zinc-200 px-3 py-3 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                <div className="select-none rounded-lg border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                   Pin important threads for quick access.
                 </div>
               ) : (
@@ -341,7 +464,7 @@ export function CustomSidebar({
                 setCollapsed((s: any) => ({ ...s, recent: !s.recent }))
               }>
               {recent.length === 0 ? (
-                <div className="select-none rounded-lg border border-dashed border-zinc-200 px-3 py-3 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                <div className="select-none rounded-lg border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                   No conversations yet. Start a new one!
                 </div>
               ) : (
@@ -368,7 +491,7 @@ export function CustomSidebar({
               <div className="-mx-1">
                 <button
                   onClick={() => setShowCreateFolderModal(true)}
-                  className="mb-2 inline-flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="mb-2 inline-flex w-full items-center gap-2 sidebar-item text-foreground"
                   style={{ WebkitTapHighlightColor: "transparent" }}>
                   <Plus className="h-4 w-4" /> Create folder
                 </button>
@@ -399,7 +522,7 @@ export function CustomSidebar({
               <div className="-mx-1">
                 <button
                   onClick={() => setShowCreateTemplateModal(true)}
-                  className="mb-2 inline-flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="mb-2 inline-flex w-full items-center gap-2 sidebar-item text-foreground"
                   style={{ WebkitTapHighlightColor: "transparent" }}>
                   <Plus className="h-4 w-4" /> Create template
                 </button>
@@ -418,7 +541,7 @@ export function CustomSidebar({
                 )}
 
                 {(!templates || templates.length === 0) && (
-                  <div className="select-none rounded-lg border border-dashed border-zinc-200 px-3 py-3 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                  <div className="select-none rounded-lg border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                     No templates yet. Create your first prompt template.
                   </div>
                 )}
@@ -426,10 +549,10 @@ export function CustomSidebar({
             </SidebarSection>
           </nav>
 
-          <div className="mt-auto border-t border-zinc-200/60 px-3 py-3 dark:border-zinc-800">
+          <div className="mt-auto border-t border-border px-3 py-3">
             <div className="flex items-center gap-2">
               <SettingsPopover>
-                <button className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800">
+                <button className="inline-flex items-center gap-2 sidebar-item">
                   <Settings className="h-4 w-4" /> Settings
                 </button>
               </SettingsPopover>
@@ -437,18 +560,25 @@ export function CustomSidebar({
                 <ThemeToggle theme={theme} setTheme={setTheme} />
               </div>
             </div>
-            <div className="mt-2 flex items-center gap-2 rounded-xl bg-zinc-50 p-2 dark:bg-zinc-800/60">
-              <div className="grid h-8 w-8 place-items-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-white dark:text-zinc-900">
-                HJ
+            <div className="mt-2 flex items-center gap-2 rounded-xl bg-muted p-2">
+              <div className="user-avatar grid h-8 w-8 place-items-center rounded-full text-xs font-bold">
+                {getUserInitials()}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">
-                  Abdulhakimov Hojiakbar
+                  {getUserFullName()}
                 </div>
-                <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                  Pro workspace
+                <div className="truncate text-xs text-muted-foreground">
+                  {userProfile?.phone || "No phone"}
                 </div>
               </div>
+              <button
+                onClick={handleLogoutClick}
+                className="rounded-lg p-1.5 hover:bg-accent transition-colors"
+                title="Logout"
+                aria-label="Logout">
+                <LogOut className="h-4 w-4 text-muted-foreground" />
+              </button>
             </div>
           </div>
         </aside>
@@ -486,7 +616,7 @@ export function CustomSidebar({
               <div className="ml-auto flex items-center gap-1">
                 <button
                   onClick={() => setSidebarCollapsed(true)}
-                  className="hidden md:block rounded-xl p-2 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800"
+                  className="hidden md:block sidebar-button"
                   style={{ WebkitTapHighlightColor: "transparent" }}
                   aria-label="Close sidebar"
                   title="Close sidebar">
@@ -499,7 +629,7 @@ export function CustomSidebar({
                     e.stopPropagation();
                     onClose();
                   }}
-                  className="md:hidden rounded-xl p-2 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800"
+                  className="md:hidden sidebar-button"
                   style={{ WebkitTapHighlightColor: "transparent" }}
                   aria-label="Close sidebar">
                   <PanelLeftClose className="h-5 w-5" />
@@ -656,10 +786,10 @@ export function CustomSidebar({
               </SidebarSection>
             </nav>
 
-            <div className="mt-auto border-t border-zinc-200/60 px-3 py-3 dark:border-zinc-800">
+            <div className="mt-auto border-t border-border px-3 py-3">
               <div className="flex items-center gap-2">
                 <SettingsPopover>
-                  <button className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-zinc-800">
+                  <button className="inline-flex items-center gap-2 sidebar-item">
                     <Settings className="h-4 w-4" /> Settings
                   </button>
                 </SettingsPopover>
@@ -667,18 +797,25 @@ export function CustomSidebar({
                   <ThemeToggle theme={theme} setTheme={setTheme} />
                 </div>
               </div>
-              <div className="mt-2 flex items-center gap-2 rounded-xl bg-zinc-50 p-2 dark:bg-zinc-800/60">
-                <div className="grid h-8 w-8 place-items-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-white dark:text-zinc-900">
-                  HJ
+              <div className="mt-2 flex items-center gap-2 rounded-xl bg-muted p-2">
+                <div className="user-avatar grid h-8 w-8 place-items-center rounded-full text-xs font-bold">
+                  {getUserInitials()}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">
-                    Abdulhakimov Hojiakbar
+                    {getUserFullName()}
                   </div>
-                  <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                    Pro workspace
+                  <div className="truncate text-xs text-muted-foreground">
+                    {userProfile?.phone || "No phone"}
                   </div>
                 </div>
+                <button
+                  onClick={handleLogoutClick}
+                  className="rounded-lg p-1.5 hover:bg-accent transition-colors"
+                  title="Logout"
+                  aria-label="Logout">
+                  <LogOut className="h-4 w-4 text-muted-foreground" />
+                </button>
               </div>
             </div>
           </motion.aside>
@@ -710,6 +847,24 @@ export function CustomSidebar({
         togglePin={togglePin}
         createNewChat={createNewChat}
       />
+
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Chiqib ketmoqchimisiz?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tizimdan chiqib ketishni tasdiqlaysizmi? Qayta kirish uchun login
+              sahifasiga o'tasiz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Yo'q</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLogout}>
+              Ha, chiqish
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
