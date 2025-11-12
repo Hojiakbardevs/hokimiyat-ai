@@ -1,7 +1,7 @@
 // src/api/client.ts
 // Centralized fetch client with token handling and optional auto-refresh.
 
-const DEFAULT_BASE = "http://172.20.10.2:8000/api/v1";
+const DEFAULT_BASE = "http://192.168.95.155:8000/api/v1";
 export const API_BASE: string = (import.meta as any)?.env?.VITE_API_BASE || DEFAULT_BASE;
 
 export type Tokens = { access?: string; refresh?: string };
