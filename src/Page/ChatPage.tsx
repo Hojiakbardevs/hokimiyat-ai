@@ -270,29 +270,20 @@ export default function ChatPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [sidebarOpen]);
 
-  // Create new chat on initial load if needed
-  useEffect(() => {
-    if (!selectedId && conversations.length > 0 && conversationsLoaded) {
-      createNewChat();
-    }
-  }, [conversationsLoaded]);
-
-  // Loaded conversations tracking
+  // Track which conversation messages are already loaded
   const [loadedConversations, setLoadedConversations] = useState<Set<string>>(
     () => {
-      if (typeof window === "undefined") return new Set();
+      if (typeof window === "undefined") return new Set<string>();
       try {
         const saved = localStorage.getItem("chat-loaded-conversations");
-        if (saved) {
-          return new Set(JSON.parse(saved));
-        }
-      } catch (e) {
-        console.error("Failed to parse loaded conversations:", e);
+        return saved ? new Set<string>(JSON.parse(saved)) : new Set<string>();
+      } catch {
+        return new Set<string>();
       }
-      return new Set();
     }
   );
 
+  // Persist loadedConversations
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -591,11 +582,6 @@ export default function ChatPage() {
     await sendMessage(convId, msg.content, msg.attachments || []);
   }
 
-  function pauseThinking() {
-    setIsThinking(false);
-    setThinkingConvId(null);
-  }
-
   function handleUseTemplate(template: { content: string }) {
     setIsThinking(false);
     setThinkingConvId(null);
@@ -642,16 +628,6 @@ export default function ChatPage() {
         />
         <DocumentViewer />
         <main className="relative flex w-1/3 flex-col">
-          {!conversationsLoaded && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80">
-              <div className="text-center">
-                <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Suhbatlar yuklanmoqda...
-                </p>
-              </div>
-            </div>
-          )}
           <ChatPane
             key={selected?.id}
             ref={composerRef}
