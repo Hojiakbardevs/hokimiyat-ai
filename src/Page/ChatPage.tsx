@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import  { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   INITIAL_CONVERSATIONS,
@@ -222,11 +222,6 @@ export default function ChatPage() {
     }
   }
 
-  function pauseThinking() {
-    setIsThinking(false);
-    setThinkingConvId(null);
-  }
-
   // Save conversations to localStorage
   useEffect(() => {
     if (
@@ -270,20 +265,29 @@ export default function ChatPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [sidebarOpen]);
 
-  // Track which conversation messages are already loaded
+  // Create new chat on initial load if needed
+  useEffect(() => {
+    if (!selectedId && conversations.length > 0 && conversationsLoaded) {
+      createNewChat();
+    }
+  }, [conversationsLoaded]);
+
+  // Loaded conversations tracking
   const [loadedConversations, setLoadedConversations] = useState<Set<string>>(
     () => {
-      if (typeof window === "undefined") return new Set<string>();
+      if (typeof window === "undefined") return new Set();
       try {
         const saved = localStorage.getItem("chat-loaded-conversations");
-        return saved ? new Set<string>(JSON.parse(saved)) : new Set<string>();
-      } catch {
-        return new Set<string>();
+        if (saved) {
+          return new Set(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.error("Failed to parse loaded conversations:", e);
       }
+      return new Set();
     }
   );
 
-  // Persist loadedConversations
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -579,12 +583,15 @@ export default function ChatPage() {
     const conv = conversations.find((c) => c.id === convId);
     const msg = conv?.messages?.find((m) => m.id === messageId);
     if (!msg) return;
-    await sendMessage(convId, msg.content, msg.attachments || []);
+    await sendMessage(convId, msg.content, msg.attachments);
+  }
+
+  function pauseThinking() {
+    setIsThinking(false);
+    setThinkingConvId(null);
   }
 
   function handleUseTemplate(template: { content: string }) {
-    setIsThinking(false);
-    setThinkingConvId(null);
     if (
       composerRef.current &&
       typeof (composerRef.current as any).insertTemplate === "function"
@@ -597,37 +604,50 @@ export default function ChatPage() {
   const selected = conversations.find((c) => c.id === selectedId) || null;
 
   return (
-    <div className="flex justify-center">
-      <div className="mx-auto flex h-[calc(100vh-0px)] w-full bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <CustomSidebar
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          theme={theme}
-          setTheme={setTheme}
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-          sidebarCollapsed={sidebarCollapsed}
-          setSidebarCollapsed={setSidebarCollapsed}
-          conversations={conversations}
-          pinned={pinned}
-          recent={recent}
-          folders={folders}
-          folderCounts={folderCounts}
-          selectedId={selectedId}
-          onSelect={(id: string) => setSelectedId(id)}
-          togglePin={togglePin}
-          query={query}
-          setQuery={setQuery}
-          searchRef={searchRef}
-          createFolder={createFolder}
-          createNewChat={createNewChat}
-          templates={templates}
-          setTemplates={setTemplates}
-          onUseTemplate={handleUseTemplate}
-          onReloadConversations={loadConversationsFromBackend}
-        />
-        <DocumentViewer />
-        <main className="relative flex w-1/3 flex-col">
+    <div className="flex h-screen w-full overflow-hidden">
+      {/* Sidebar */}
+      <CustomSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        theme={theme}
+        setTheme={setTheme}
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+        conversations={conversations}
+        pinned={pinned}
+        recent={recent}
+        folders={folders}
+        folderCounts={folderCounts}
+        selectedId={selectedId}
+        onSelect={(id: string) => setSelectedId(id)}
+        togglePin={togglePin}
+        query={query}
+        setQuery={setQuery}
+        searchRef={searchRef}
+        createFolder={createFolder}
+        createNewChat={createNewChat}
+        templates={templates}
+        setTemplates={setTemplates}
+        onUseTemplate={handleUseTemplate}
+        onReloadConversations={loadConversationsFromBackend}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Chat Pane - Takes remaining space or 50% if DocumentViewer is present */}
+        <main className="relative flex flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-900">
+          {!conversationsLoaded && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80">
+              <div className="text-center">
+                <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Suhbatlar yuklanmoqda...
+                </p>
+              </div>
+            </div>
+          )}
           <ChatPane
             key={selected?.id}
             ref={composerRef}
@@ -645,6 +665,9 @@ export default function ChatPage() {
             onPauseThinking={pauseThinking}
           />
         </main>
+
+        {/* Document Viewer - Conditional rendering, takes 50% when visible */}
+        <DocumentViewer />
       </div>
     </div>
   );
