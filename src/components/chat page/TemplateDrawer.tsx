@@ -48,7 +48,7 @@ export default function TemplateDrawer({
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
             style={{ zIndex: 100 }}
-            className="fixed bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl dark:bg-zinc-900">
+            className="fixed bottom-0 left-0 right-0 max-h-[60vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl dark:bg-zinc-900 w-[99vw] mx-auto">
             {/* Header */}
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-center gap-2">

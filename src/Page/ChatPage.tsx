@@ -14,6 +14,7 @@ import { CustomSidebar } from "@/components/chat page/CustomSidebar";
 import TemplateDrawer from "@/components/chat page/TemplateDrawer";
 import { chatCompletion } from "@/api/chat";
 import { toast } from "sonner";
+import DocumentViewer from "@/components/DocumentViewer";
 
 export default function ChatPage() {
   const [theme, setTheme] = useState(() => {
@@ -352,8 +353,8 @@ export default function ChatPage() {
           setTemplates={setTemplates}
           onUseTemplate={handleUseTemplate}
         />
-
-        <main className="relative flex min-w-0 flex-1 flex-col">
+        <DocumentViewer></DocumentViewer>
+        <main className="relative flex w-1/3 flex-col">
           <Header
             setSidebarOpen={setSidebarOpen}
             onTemplateClick={() => setIsTemplateDrawerOpen(true)}
@@ -375,6 +376,7 @@ export default function ChatPage() {
             onPauseThinking={pauseThinking}
           />
         </main>
+        {/* <GeneratePage /> */}
       </div>
 
       <TemplateDrawer
