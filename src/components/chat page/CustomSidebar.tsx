@@ -490,61 +490,65 @@ export function CustomSidebar({
               )}
             </SidebarSection>
 
-            <SidebarSection
-              icon={<Clock className="h-4 w-4" />}
-              title="RECENT"
-              collapsed={collapsed.recent}
-              onToggle={() =>
-                setCollapsed((s: any) => ({ ...s, recent: !s.recent }))
-              }>
-              {recent.length === 0 ? (
-                <div className="select-none rounded-lg border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
-                  No conversations yet. Start a new one!
+            {false && (
+              <SidebarSection
+                icon={<Clock className="h-4 w-4" />}
+                title="RECENT"
+                collapsed={collapsed.recent}
+                onToggle={() =>
+                  setCollapsed((s: any) => ({ ...s, recent: !s.recent }))
+                }>
+                {recent.length === 0 ? (
+                  <div className="select-none rounded-lg border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
+                    No conversations yet. Start a new one!
+                  </div>
+                ) : (
+                  recent.map((c) => (
+                    <ConversationRow
+                      key={c.id}
+                      data={c}
+                      active={c.id === selectedId}
+                      onSelect={() => onSelect(c.id)}
+                      onTogglePin={() => togglePin(c.id)}
+                      showMeta
+                    />
+                  ))
+                )}
+              </SidebarSection>
+            )}
+
+            {false && (
+              <SidebarSection
+                icon={<FolderIcon className="h-4 w-4" />}
+                title="FOLDERS"
+                collapsed={collapsed.folders}
+                onToggle={() =>
+                  setCollapsed((s: any) => ({ ...s, folders: !s.folders }))
+                }>
+                <div className="-mx-1">
+                  <button
+                    onClick={() => setShowCreateFolderModal(true)}
+                    className="mb-2 inline-flex w-full items-center gap-2 sidebar-item text-foreground"
+                    style={{ WebkitTapHighlightColor: "transparent" }}>
+                    <Plus className="h-4 w-4" /> Create folder
+                  </button>
+
+                  {folders.map((f) => (
+                    <FolderRow
+                      key={f.id}
+                      name={f.name}
+                      count={folderCounts[f.name] || 0}
+                      conversations={getConversationsByFolder(f.name)}
+                      selectedId={selectedId}
+                      onSelect={onSelect}
+                      togglePin={togglePin}
+                      onDeleteFolder={handleDeleteFolder}
+                      onRenameFolder={handleRenameFolder}
+                    />
+                  ))}
                 </div>
-              ) : (
-                recent.map((c) => (
-                  <ConversationRow
-                    key={c.id}
-                    data={c}
-                    active={c.id === selectedId}
-                    onSelect={() => onSelect(c.id)}
-                    onTogglePin={() => togglePin(c.id)}
-                    showMeta
-                  />
-                ))
-              )}
-            </SidebarSection>
-
-            <SidebarSection
-              icon={<FolderIcon className="h-4 w-4" />}
-              title="FOLDERS"
-              collapsed={collapsed.folders}
-              onToggle={() =>
-                setCollapsed((s: any) => ({ ...s, folders: !s.folders }))
-              }>
-              <div className="-mx-1">
-                <button
-                  onClick={() => setShowCreateFolderModal(true)}
-                  className="mb-2 inline-flex w-full items-center gap-2 sidebar-item text-foreground"
-                  style={{ WebkitTapHighlightColor: "transparent" }}>
-                  <Plus className="h-4 w-4" /> Create folder
-                </button>
-
-                {folders.map((f) => (
-                  <FolderRow
-                    key={f.id}
-                    name={f.name}
-                    count={folderCounts[f.name] || 0}
-                    conversations={getConversationsByFolder(f.name)}
-                    selectedId={selectedId}
-                    onSelect={onSelect}
-                    togglePin={togglePin}
-                    onDeleteFolder={handleDeleteFolder}
-                    onRenameFolder={handleRenameFolder}
-                  />
-                ))}
-              </div>
-            </SidebarSection>
+              </SidebarSection>
+            )}
 
             <SidebarSection
               icon={<FileText className="h-4 w-4" />}

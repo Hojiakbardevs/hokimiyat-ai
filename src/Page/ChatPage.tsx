@@ -146,7 +146,7 @@ export default function ChatPage() {
   });
 
   const [templates, setTemplates] = useState(INITIAL_TEMPLATES);
-  const [folders, setFolders] = useState(INITIAL_FOLDERS);
+  const [folders, setFolders] = useState<{ id: string; name: string }[]>(INITIAL_FOLDERS as { id: string; name: string }[]);
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   const [isThinking, setIsThinking] = useState(false);
