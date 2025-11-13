@@ -1,12 +1,6 @@
 "use client";
 
-import  { useEffect, useMemo, useRef, useState } from "react";
-
-import {
-  INITIAL_CONVERSATIONS,
-  INITIAL_TEMPLATES,
-  INITIAL_FOLDERS,
-} from "@/lib/mockData";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import ChatPane from "@/components/chat page/chatpane";
 import { CustomSidebar } from "@/components/chat page/CustomSidebar";
@@ -55,7 +49,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
     } else {
@@ -68,7 +62,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const listener = (e: MediaQueryListEvent) => {
       const saved = localStorage.getItem("theme");
@@ -76,7 +70,7 @@ export default function ChatPage() {
         setTheme(e.matches ? "dark" : "light");
       }
     };
-    
+
     media.addEventListener("change", listener);
     return () => media.removeEventListener("change", listener);
   }, []);
@@ -122,7 +116,7 @@ export default function ChatPage() {
 
   // Conversations state
   const [conversations, setConversations] = useState<Conversation[]>(() => {
-    if (typeof window === "undefined") return INITIAL_CONVERSATIONS;
+    if (typeof window === "undefined") return [];
     try {
       const saved = localStorage.getItem("chat-conversations");
       if (saved) {
@@ -133,7 +127,7 @@ export default function ChatPage() {
     } catch (e) {
       console.error("Failed to parse saved conversations:", e);
     }
-    return INITIAL_CONVERSATIONS;
+    return [];
   });
 
   const [selectedId, setSelectedId] = useState<string | null>(() => {
@@ -145,8 +139,8 @@ export default function ChatPage() {
     }
   });
 
-  const [templates, setTemplates] = useState(INITIAL_TEMPLATES);
-  const [folders, setFolders] = useState<{ id: string; name: string }[]>(INITIAL_FOLDERS as { id: string; name: string }[]);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -187,23 +181,25 @@ export default function ChatPage() {
         return;
       }
 
-      const converted: Conversation[] = backendConversations.map((conv: any) => {
-        const existingConv = currentConversationsMap.get(conv.id.toString());
+      const converted: Conversation[] = backendConversations.map(
+        (conv: any) => {
+          const existingConv = currentConversationsMap.get(conv.id.toString());
 
-        return {
-          id: conv.id.toString(),
-          title: conv.title || "New Chat",
-          updatedAt: conv.updated_at,
-          messageCount:
-            typeof conv.message_count === "string"
-              ? parseInt(conv.message_count, 10)
-              : conv.message_count,
-          preview: conv.last_message_preview || "No messages yet",
-          pinned: existingConv?.pinned || false,
-          folder: existingConv?.folder || "Work Projects",
-          messages: existingConv?.messages || [],
-        };
-      });
+          return {
+            id: conv.id.toString(),
+            title: conv.title || "New Chat",
+            updatedAt: conv.updated_at,
+            messageCount:
+              typeof conv.message_count === "string"
+                ? parseInt(conv.message_count, 10)
+                : conv.message_count,
+            preview: conv.last_message_preview || "No messages yet",
+            pinned: existingConv?.pinned || false,
+            folder: existingConv?.folder || "Work Projects",
+            messages: existingConv?.messages || [],
+          };
+        }
+      );
 
       setConversations(converted);
       setConversationsLoaded(true);
@@ -231,12 +227,9 @@ export default function ChatPage() {
     ) {
       return;
     }
-    
+
     try {
-      localStorage.setItem(
-        "chat-conversations",
-        JSON.stringify(conversations)
-      );
+      localStorage.setItem("chat-conversations", JSON.stringify(conversations));
     } catch (e) {
       console.error("Failed to save conversations to localStorage:", e);
     }
@@ -260,7 +253,7 @@ export default function ChatPage() {
         setSidebarOpen(false);
       }
     };
-    
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [sidebarOpen]);
@@ -433,7 +426,9 @@ export default function ChatPage() {
   function createFolder(name?: string) {
     const folderName = name || prompt("Folder name");
     if (!folderName) return;
-    if (folders.some((f) => f.name.toLowerCase() === folderName.toLowerCase())) {
+    if (
+      folders.some((f) => f.name.toLowerCase() === folderName.toLowerCase())
+    ) {
       alert("Folder already exists.");
       return;
     }
@@ -449,7 +444,7 @@ export default function ChatPage() {
     attachments: File[] = []
   ) {
     if (!content.trim()) return;
-    
+
     const now = new Date().toISOString();
     const userMsg: Message = {
       id: Math.random().toString(36).slice(2),
@@ -546,7 +541,7 @@ export default function ChatPage() {
       content,
       createdAt: now,
     };
-    
+
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== convId) return c;
