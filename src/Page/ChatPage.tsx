@@ -8,10 +8,8 @@ import {
   INITIAL_FOLDERS,
 } from "@/lib/mockData";
 
-import Header from "@/components/chat page/Header";
 import ChatPane from "@/components/chat page/chatpane";
 import { CustomSidebar } from "@/components/chat page/CustomSidebar";
-import TemplateDrawer from "@/components/chat page/TemplateDrawer";
 import { chatCompletion } from "@/api/chat";
 import { toast } from "sonner";
 import DocumentViewer from "@/components/DocumentViewer";
@@ -37,7 +35,7 @@ export default function ChatPage() {
       document.documentElement.setAttribute("data-theme", theme);
       document.documentElement.style.colorScheme = theme;
       localStorage.setItem("theme", theme);
-    } catch {}
+    } catch { }
   }, [theme]);
 
   useEffect(() => {
@@ -51,7 +49,7 @@ export default function ChatPage() {
       };
       media.addEventListener("change", listener);
       return () => media.removeEventListener("change", listener);
-    } catch {}
+    } catch { }
   }, []);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -68,7 +66,7 @@ export default function ChatPage() {
   useEffect(() => {
     try {
       localStorage.setItem("sidebar-collapsed", JSON.stringify(collapsed));
-    } catch {}
+    } catch { }
   }, [collapsed]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -86,7 +84,7 @@ export default function ChatPage() {
         "sidebar-collapsed-state",
         JSON.stringify(sidebarCollapsed)
       );
-    } catch {}
+    } catch { }
   }, [sidebarCollapsed]);
 
   const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
@@ -99,7 +97,6 @@ export default function ChatPage() {
 
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingConvId, setThinkingConvId] = useState<string | null>(null);
-  const [isTemplateDrawerOpen, setIsTemplateDrawerOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -355,10 +352,7 @@ export default function ChatPage() {
         />
         <DocumentViewer></DocumentViewer>
         <main className="relative flex w-1/3 flex-col">
-          <Header
-            setSidebarOpen={setSidebarOpen}
-            onTemplateClick={() => setIsTemplateDrawerOpen(true)}
-          />
+
           <ChatPane
             key={selected?.id}
             ref={composerRef}
@@ -376,15 +370,7 @@ export default function ChatPage() {
             onPauseThinking={pauseThinking}
           />
         </main>
-        {/* <GeneratePage /> */}
       </div>
-
-      <TemplateDrawer
-        isOpen={isTemplateDrawerOpen}
-        onClose={() => setIsTemplateDrawerOpen(false)}
-        templates={templates}
-        onSelectTemplate={handleUseTemplate}
-      />
     </div>
   );
 }

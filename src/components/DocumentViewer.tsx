@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
   FileText,
   Loader2,
   Wand2,
@@ -12,13 +11,20 @@ import {
   Upload,
   Trash2,
   FileUp,
-  Moon,
-  Sun,
   ChevronDown,
   Sparkles,
 } from "lucide-react";
 import { createDocument } from "@/api/documents";
 import { toast } from "sonner";
+import * as pdfjsLib from "pdfjs-dist";
+import mammoth from "mammoth";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+import TemplateDrawer from "@/components/chat page/TemplateDrawer";
+import { INITIAL_TEMPLATES } from "@/lib/mockData";
 
 // Utils
 function formatBytes(bytes: number): string {
@@ -50,14 +56,37 @@ async function extractTextFromFile(file: File): Promise<string> {
     file.type === "application/pdf" ||
     file.name.toLowerCase().endsWith(".pdf")
   ) {
-    return "PDF fayl yuklandi. Matn ekstraktsiya uchun maxsus kutubxona (pdf-parse yoki pdf2pic) kerak bo'ladi.";
+    try {
+      const data = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data });
+      const pdf = await loadingTask.promise;
+      let fullText = "";
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        const strings = content.items.map((it: any) => (it.str ? it.str : ""));
+        fullText += strings.join(" ") + "\n\n";
+      }
+      return fullText.trim() || "PDF matni topilmadi.";
+    } catch (e) {
+      console.warn("PDF extraction failed:", e);
+      return "PDF matnini ajratish uchun pdfjs-dist kerak. Iltimos, kutubxona o'rnatilganligini tekshiring.";
+    }
   }
   if (
     file.type ===
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     file.name.toLowerCase().endsWith(".docx")
   ) {
-    return "DOCX fayl yuklandi. Matn ekstraktsiya uchun maxsus kutubxona (mammoth.js) kerak bo'ladi.";
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      const plain = result.value.trim();
+      return plain || "DOCX matni topilmadi.";
+    } catch (e) {
+      console.warn("DOCX extraction failed:", e);
+      return "DOCX matnini ajratish uchun mammoth.js kerak. Iltimos, kutubxona o'rnatilganligini tekshiring.";
+    }
   }
   if (file.name.toLowerCase().endsWith(".doc")) {
     return "DOC fayl yuklandi. Matn ekstraktsiya uchun maxsus kutubxona kerak bo'ladi.";
@@ -65,27 +94,7 @@ async function extractTextFromFile(file: File): Promise<string> {
   return text;
 }
 
-// Mock templates
-const TEMPLATES = [
-  {
-    id: "ariza",
-    name: "Ariza",
-    content:
-      "ARIZA\n\nMen, [F.I.O], [manzil]da yashovchi fuqaro sifatida sizdan quyidagilarni so'rayman:\n\n[Asosiy mazmun]\n\nIlova:\n1. [Ilova 1]\n2. [Ilova 2]\n\nSana: _________\nImzo: _________",
-  },
-  {
-    id: "buyruq",
-    name: "Buyruq",
-    content:
-      'BUYRUQ\n\n№ _____ "____" ________ 20__ yil\n\n[Buyruq mazmuni]\n\n1. [Band 1]\n2. [Band 2]\n3. [Band 3]\n\nRahbar: _________\nImzo: _________',
-  },
-  {
-    id: "xat",
-    name: "Rasmiy xat",
-    content:
-      "RASMIY XAT\n\n[Kimga]\n[Unvoni]\n\nHurmatli [Ism],\n\n[Xat mazmuni]\n\n[Yakuniy fikr]\n\nHurmat bilan,\n[F.I.O]\n[Lavozim]\nSana: _________",
-  },
-];
+// Use global app templates
 
 export function DocumentViewer() {
   const navigate = useNavigate();
@@ -94,24 +103,6 @@ export function DocumentViewer() {
     | { file?: File; fileName?: string }
     | undefined;
 
-  // Theme
-  const [theme, setTheme] = useState(() => {
-    try {
-      const saved =
-        typeof window !== "undefined" && localStorage.getItem("theme");
-      if (saved) return saved;
-      if (
-        typeof window !== "undefined" &&
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches
-      )
-        return "dark";
-      return "light";
-    } catch {
-      return "light";
-    }
-  });
-
   // State
   const [mode, setMode] = useState<"upload" | "template">("upload");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -119,10 +110,15 @@ export function DocumentViewer() {
   const [extracting, setExtracting] = useState(false);
 
   // Template mode
-  const [selectedTemplateId, setSelectedTemplateId] = useState(TEMPLATES[0].id);
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    INITIAL_TEMPLATES[0].id
+  );
+  const [detectedTemplate, setDetectedTemplate] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [isTemplateDrawerOpen, setIsTemplateDrawerOpen] = useState(false);
 
   // AI generation
   const [generatedText, setGeneratedText] = useState("");
@@ -130,16 +126,8 @@ export function DocumentViewer() {
   const [isDragging, setIsDragging] = useState(false);
 
   const selectedTemplate =
-    TEMPLATES.find((t) => t.id === selectedTemplateId) || TEMPLATES[0];
-
-  useEffect(() => {
-    try {
-      if (theme === "dark") document.documentElement.classList.add("dark");
-      else document.documentElement.classList.remove("dark");
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
-    } catch {}
-  }, [theme]);
+    INITIAL_TEMPLATES.find((t: any) => t.id === selectedTemplateId) ||
+    INITIAL_TEMPLATES[0];
 
   useEffect(() => {
     if (state?.file) {
@@ -148,15 +136,86 @@ export function DocumentViewer() {
     }
   }, [state]);
 
+  // AI shablon aniqlash
+  async function detectTemplateFromText(text: string) {
+    setIsAnalyzing(true);
+    try {
+      // Backend API orqali shablon aniqlash
+      const response = await createDocument({
+        content: text,
+        description: "Detect template type",
+        template_type: "auto_detect",
+        language_code: "uz",
+        script_type: "latin",
+      });
+
+      // Backend javobidan shablon turini ajratib olish
+      const detected = response.template_type || "ariza";
+      setDetectedTemplate(detected);
+      setSelectedTemplateId(detected);
+      toast.success(
+        `AI shablon aniqladi: ${
+          INITIAL_TEMPLATES.find((t) => t.id === detected)?.name || detected
+        }`
+      );
+    } catch (error) {
+      // Fallback: oddiy matn tahlili
+      const lowerText = text.toLowerCase();
+      let detected = "ariza";
+
+      if (lowerText.includes("buyruq") || lowerText.includes("qarori")) {
+        detected = "buyruq";
+      } else if (
+        lowerText.includes("shartnoma") ||
+        lowerText.includes("kelishuv")
+      ) {
+        detected = "shartnoma";
+      } else if (
+        lowerText.includes("hisobot") ||
+        lowerText.includes("ma'lumot")
+      ) {
+        detected = "hisobot";
+      } else if (
+        lowerText.includes("dalolatnoma") ||
+        lowerText.includes("bayonnoma")
+      ) {
+        detected = "dalolatnoma";
+      } else if (lowerText.includes("xat") || lowerText.includes("maktub")) {
+        detected = "xat";
+      }
+
+      setDetectedTemplate(detected);
+      setSelectedTemplateId(detected);
+      toast.info(
+        `AI tahlil: ${
+          INITIAL_TEMPLATES.find((t) => t.id === detected)?.name || "Ariza"
+        } aniqlandi`
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+
   // Handle file upload
   async function handleFileUpload(file: File) {
     setUploadedFile(file);
     setExtracting(true);
+    setOriginalText("");
+    setDetectedTemplate(null);
+
     try {
       const text = await extractTextFromFile(file);
       setOriginalText(text);
-    } catch (error) {
-      setOriginalText("Fayldan matn ajratib bo'lmadi.");
+      toast.success(`${file.name} muvaffaqiyatli yuklandi!`);
+
+      // Avtomatik shablon aniqlash
+      if (text.trim().length > 50) {
+        await detectTemplateFromText(text);
+      }
+    } catch (error: any) {
+      console.error("Fayl yuklash xatosi:", error);
+      setOriginalText("Faylni o'qishda xatolik yuz berdi.");
+      toast.error(error.message || "Faylni o'qishda xatolik yuz berdi");
     } finally {
       setExtracting(false);
     }
@@ -242,29 +301,8 @@ export function DocumentViewer() {
   return (
     <div className="flex min-h-screen flex-col  w-2/3 from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900/80">
+      <header className="sticky top-0 z-50  border-zinc-200 bg-white/80 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900/80">
         <div className="mx-auto flex h-16 w-full items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate("/chat-assistant")}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800">
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-purple-600 text-white shadow-lg">
-                <FileText className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                  Hujjat Platformasi
-                </h1>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  AI bilan ishlaydigan universal platforma
-                </p>
-              </div>
-            </div>
-          </div>
-
           <div className="flex items-center gap-3">
             {/* Mode selector */}
             <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900">
@@ -297,16 +335,6 @@ export function DocumentViewer() {
                 Shablon
               </button>
             </div>
-
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800">
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </button>
           </div>
         </div>
       </header>
@@ -344,15 +372,15 @@ export function DocumentViewer() {
                     }
                   }}
                   className={cls(
-                    "flex min-h-64 flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition",
+                    "flex min-h-28 flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition",
                     isDragging
                       ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/20"
                       : "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50"
                   )}>
                   {uploadedFile ? (
-                    <div className="flex w-full flex-col items-center gap-4">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-900/30">
-                        <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    <div className="flex w-full flex-col items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30">
+                        <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="text-center">
                         <p className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -375,13 +403,13 @@ export function DocumentViewer() {
                     </div>
                   ) : (
                     <>
-                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
-                        <FileUp className="h-8 w-8 text-zinc-400" />
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
+                        <FileUp className="h-6 w-6 text-zinc-400" />
                       </div>
-                      <p className="mb-2 text-center text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                      <p className="mb-1 text-center text-sm font-medium text-zinc-900 dark:text-zinc-100">
                         Faylni bu yerga tashlang yoki tanlang
                       </p>
-                      <p className="mb-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                      <p className="mb-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
                         PDF, DOCX, TXT va boshqa formatlar
                       </p>
                       <label className="cursor-pointer rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
@@ -403,11 +431,52 @@ export function DocumentViewer() {
 
                 {/* Original text preview */}
                 {originalText && (
-                  <div className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/50">
-                    <h3 className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      Original matn
-                    </h3>
-                    <div className="max-h-64 overflow-y-auto rounded-lg bg-white p-3 dark:bg-zinc-900">
+                  <div
+                    className="flex flex-col rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/50"
+                    style={{ minHeight: "300px", maxHeight: "400px" }}>
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        Original matn
+                      </h3>
+                      {isAnalyzing && (
+                        <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          AI tahlil qilmoqda...
+                        </div>
+                      )}
+                    </div>
+
+                    {/* AI aniqlangan shablon */}
+                    {detectedTemplate && (
+                      <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                            AI tomonidan aniqlangan shablon
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          <select
+                            value={selectedTemplateId}
+                            onChange={(e) =>
+                              setSelectedTemplateId(e.target.value)
+                            }
+                            className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:border-blue-800 dark:bg-zinc-900 dark:text-zinc-100">
+                            {INITIAL_TEMPLATES.map((t: any) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-blue-700 dark:text-blue-300">
+                            Shablon to'g'ri bo'lmasa, yuqoridan
+                            o'zgartirishingiz mumkin
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex-1 overflow-y-auto rounded-lg bg-white p-3 dark:bg-zinc-900">
                       {extracting ? (
                         <div className="flex items-center gap-2 text-zinc-500">
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -435,13 +504,20 @@ export function DocumentViewer() {
                         value={selectedTemplateId}
                         onChange={(e) => setSelectedTemplateId(e.target.value)}
                         className="w-full appearance-none rounded-lg border border-zinc-300 bg-white px-4 py-2 pr-10 text-sm text-zinc-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-blue-400">
-                        {TEMPLATES.map((t) => (
+                        {INITIAL_TEMPLATES.map((t: any) => (
                           <option key={t.id} value={t.id}>
                             {t.name}
                           </option>
                         ))}
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-zinc-400" />
+                    </div>
+                    <div className="mt-2">
+                      <button
+                        onClick={() => setIsTemplateDrawerOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                        <FileText className="h-4 w-4" /> Barcha shablonlar
+                      </button>
                     </div>
                   </div>
 
@@ -575,6 +651,20 @@ export function DocumentViewer() {
                     <Download className="h-4 w-4" />
                     Yuklab olish
                   </button>
+                  <button
+                    onClick={() =>
+                      navigate("/final", {
+                        state: {
+                          content: generatedText,
+                          title: title || uploadedFile?.name || "",
+                          templateId: selectedTemplateId,
+                        },
+                      })
+                    }
+                    className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+                    <FileText className="h-4 w-4" />
+                    Finalga o'tish
+                  </button>
                 </div>
               )}
             </div>
@@ -620,6 +710,17 @@ export function DocumentViewer() {
           </div>
         </div>
       </main>
+      {/* Templates Drawer */}
+      <TemplateDrawer
+        isOpen={isTemplateDrawerOpen}
+        onClose={() => setIsTemplateDrawerOpen(false)}
+        templates={INITIAL_TEMPLATES as any}
+        onSelectTemplate={(t: any) => {
+          setSelectedTemplateId(t.id);
+          if (!title) setTitle(t.name);
+          setIsTemplateDrawerOpen(false);
+        }}
+      />
     </div>
   );
 }
