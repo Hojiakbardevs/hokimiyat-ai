@@ -12,52 +12,81 @@ import ChatPane from "@/components/chat page/chatpane";
 import { CustomSidebar } from "@/components/chat page/CustomSidebar";
 import {
   chatCompletion,
+  sendMessageToConversation,
   getConversations,
   getConversationById,
+  getConversationPageByUrl,
 } from "@/api/chat";
 import { toast } from "sonner";
 import DocumentViewer from "@/components/DocumentViewer";
 
+// Conversation type definition
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+  editedAt?: string;
+  attachments?: File[];
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  updatedAt: string;
+  messageCount: number;
+  preview: string;
+  pinned: boolean;
+  folder: string;
+  messages: Message[];
+}
+
 export default function ChatPage() {
+  // Theme management
   const [theme, setTheme] = useState(() => {
-    const saved =
-      typeof window !== "undefined" && localStorage.getItem("theme");
+    if (typeof window === "undefined") return "light";
+    const saved = localStorage.getItem("theme");
     if (saved) return saved;
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    )
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
       return "dark";
+    }
     return "light";
   });
 
   useEffect(() => {
-    try {
-      if (theme === "dark") document.documentElement.classList.add("dark");
-      else document.documentElement.classList.remove("dark");
-      document.documentElement.setAttribute("data-theme", theme);
-      document.documentElement.style.colorScheme = theme;
-      localStorage.setItem("theme", theme);
-    } catch {}
+    if (typeof window === "undefined") return;
+    
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   useEffect(() => {
-    try {
-      const media =
-        window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
-      if (!media) return;
-      const listener = (e: MediaQueryListEvent) => {
-        const saved = localStorage.getItem("theme");
-        if (!saved) setTheme(e.matches ? "dark" : "light");
-      };
-      media.addEventListener("change", listener);
-      return () => media.removeEventListener("change", listener);
-    } catch {}
+    if (typeof window === "undefined") return;
+    
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const listener = (e: MediaQueryListEvent) => {
+      const saved = localStorage.getItem("theme");
+      if (!saved) {
+        setTheme(e.matches ? "dark" : "light");
+      }
+    };
+    
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
   }, []);
 
+  // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") {
+      return { pinned: true, recent: false, folders: true, templates: true };
+    }
     try {
       const raw = localStorage.getItem("sidebar-collapsed");
       return raw
@@ -67,13 +96,14 @@ export default function ChatPage() {
       return { pinned: true, recent: false, folders: true, templates: true };
     }
   });
+
   useEffect(() => {
-    try {
-      localStorage.setItem("sidebar-collapsed", JSON.stringify(collapsed));
-    } catch {}
+    if (typeof window === "undefined") return;
+    localStorage.setItem("sidebar-collapsed", JSON.stringify(collapsed));
   }, [collapsed]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
     try {
       const saved = localStorage.getItem("sidebar-collapsed-state");
       return saved ? JSON.parse(saved) : false;
@@ -83,68 +113,81 @@ export default function ChatPage() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        "sidebar-collapsed-state",
-        JSON.stringify(sidebarCollapsed)
-      );
-    } catch {}
+    if (typeof window === "undefined") return;
+    localStorage.setItem(
+      "sidebar-collapsed-state",
+      JSON.stringify(sidebarCollapsed)
+    );
   }, [sidebarCollapsed]);
 
-  const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Conversations state
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    if (typeof window === "undefined") return INITIAL_CONVERSATIONS;
+    try {
+      const saved = localStorage.getItem("chat-conversations");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log("Loaded conversations from localStorage:", parsed.length);
+        return parsed;
+      }
+    } catch (e) {
+      console.error("Failed to parse saved conversations:", e);
+    }
+    return INITIAL_CONVERSATIONS;
+  });
+
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem("chat-selected-id") || null;
+    } catch {
+      return null;
+    }
+  });
+
   const [templates, setTemplates] = useState(INITIAL_TEMPLATES);
   const [folders, setFolders] = useState(INITIAL_FOLDERS);
-
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
-
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingConvId, setThinkingConvId] = useState<string | null>(null);
   const [conversationsLoaded, setConversationsLoaded] = useState(false);
 
-  // Load conversations from backend and localStorage on mount
+  // Save selectedId to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (selectedId) {
+        localStorage.setItem("chat-selected-id", selectedId);
+      } else {
+        localStorage.removeItem("chat-selected-id");
+      }
+    } catch (e) {
+      console.error("Failed to save selectedId:", e);
+    }
+  }, [selectedId]);
+
+  // Load conversations from backend on mount
   useEffect(() => {
     loadConversationsFromBackend();
   }, []);
 
   async function loadConversationsFromBackend() {
     try {
-      // Save current conversations with messages before reloading
       const currentConversationsMap = new Map(
         conversations.map((c) => [c.id, c])
       );
 
-      // Try to load from localStorage first (for offline support)
-      const savedConversations = localStorage.getItem("chat-conversations");
-      if (savedConversations && conversations.length === 0) {
-        // Only load from localStorage if we don't have conversations yet
-        try {
-          const parsed = JSON.parse(savedConversations);
-          setConversations(parsed);
-          console.log("Loaded conversations from localStorage:", parsed.length);
-        } catch (e) {
-          console.error("Failed to parse saved conversations:", e);
-        }
-      }
-
-      // Then fetch from backend
       const backendConversations = await getConversations();
       console.log("Backend conversations:", backendConversations);
 
-      // If backend returned empty or invalid data, use mock data
       if (!backendConversations || backendConversations.length === 0) {
         console.log("Backend returned empty, keeping current conversations");
-        if (conversations.length === 0) {
-          setConversations(INITIAL_CONVERSATIONS);
-          toast.info("Demo rejimda ishlamoqda (mock data)");
-        }
         setConversationsLoaded(true);
         return;
       }
 
-      // Convert backend format to frontend format
-      const converted = backendConversations.map((conv) => {
+      const converted: Conversation[] = backendConversations.map((conv: any) => {
         const existingConv = currentConversationsMap.get(conv.id.toString());
 
         return {
@@ -153,12 +196,11 @@ export default function ChatPage() {
           updatedAt: conv.updated_at,
           messageCount:
             typeof conv.message_count === "string"
-              ? parseInt(conv.message_count)
+              ? parseInt(conv.message_count, 10)
               : conv.message_count,
           preview: conv.last_message_preview || "No messages yet",
           pinned: existingConv?.pinned || false,
           folder: existingConv?.folder || "Work Projects",
-          // Preserve existing messages if available
           messages: existingConv?.messages || [],
         };
       });
@@ -166,39 +208,46 @@ export default function ChatPage() {
       setConversations(converted);
       setConversationsLoaded(true);
 
-      // Save to localStorage for offline support
-      localStorage.setItem("chat-conversations", JSON.stringify(converted));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("chat-conversations", JSON.stringify(converted));
+      }
 
       console.log(`${converted.length} ta suhbat yangilandi`);
     } catch (error: any) {
       console.error("Failed to load conversations:", error);
-
-      // If backend fails, keep current conversations
-      if (conversations.length === 0) {
-        console.log("Backend failed, using mock data as fallback");
-        setConversations(INITIAL_CONVERSATIONS);
-        toast.error(
-          "Backend bilan bog'lanishda xatolik. Demo rejimda ishlamoqda."
-        );
-      }
+      toast.error(
+        "Backend bilan bog'lanishda xatolik: " + (error.message || "")
+      );
       setConversationsLoaded(true);
     }
   }
 
-  // Save conversations to localStorage whenever they change
+  function pauseThinking() {
+    setIsThinking(false);
+    setThinkingConvId(null);
+  }
+
+  // Save conversations to localStorage
   useEffect(() => {
-    if (conversationsLoaded && conversations.length > 0) {
-      try {
-        localStorage.setItem(
-          "chat-conversations",
-          JSON.stringify(conversations)
-        );
-      } catch (e) {
-        console.error("Failed to save conversations to localStorage:", e);
-      }
+    if (
+      typeof window === "undefined" ||
+      !conversationsLoaded ||
+      conversations.length === 0
+    ) {
+      return;
+    }
+    
+    try {
+      localStorage.setItem(
+        "chat-conversations",
+        JSON.stringify(conversations)
+      );
+    } catch (e) {
+      console.error("Failed to save conversations to localStorage:", e);
     }
   }, [conversations, conversationsLoaded]);
 
+  // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
@@ -212,71 +261,113 @@ export default function ChatPage() {
           searchRef.current?.focus();
         }
       }
-      if (e.key === "Escape" && sidebarOpen) setSidebarOpen(false);
+      if (e.key === "Escape" && sidebarOpen) {
+        setSidebarOpen(false);
+      }
     };
+    
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [sidebarOpen, conversations]);
+  }, [sidebarOpen]);
 
+  // Create new chat on initial load if needed
   useEffect(() => {
-    if (!selectedId && conversations.length > 0) {
+    if (!selectedId && conversations.length > 0 && conversationsLoaded) {
       createNewChat();
     }
-  }, []);
+  }, [conversationsLoaded]);
+
+  // Loaded conversations tracking
+  const [loadedConversations, setLoadedConversations] = useState<Set<string>>(
+    () => {
+      if (typeof window === "undefined") return new Set();
+      try {
+        const saved = localStorage.getItem("chat-loaded-conversations");
+        if (saved) {
+          return new Set(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.error("Failed to parse loaded conversations:", e);
+      }
+      return new Set();
+    }
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        "chat-loaded-conversations",
+        JSON.stringify(Array.from(loadedConversations))
+      );
+    } catch (e) {
+      console.error("Failed to save loaded conversations:", e);
+    }
+  }, [loadedConversations]);
 
   // Load conversation messages when selected
   useEffect(() => {
     if (selectedId && !selectedId.includes(".")) {
-      // If selectedId is a number (from backend), load messages
-      loadConversationMessages(selectedId);
+      const numericId = parseInt(selectedId, 10);
+      if (!isNaN(numericId) && !loadedConversations.has(selectedId)) {
+        loadConversationMessages(selectedId);
+        setLoadedConversations((prev) => new Set(prev).add(selectedId));
+      }
     }
-  }, [selectedId]);
+  }, [selectedId, loadedConversations]);
 
   async function loadConversationMessages(convId: string) {
     try {
-      const numericId = parseInt(convId);
-      if (isNaN(numericId)) return; // Skip for local conversations
+      const numericId = parseInt(convId, 10);
+      if (isNaN(numericId)) return;
 
-      const conversationDetail = await getConversationById(numericId);
-      console.log("Loaded conversation detail:", conversationDetail);
+      const firstPage = await getConversationById(numericId);
+      console.log("Loaded conversation first page:", firstPage);
 
-      // Handle paginated response format
-      let messages: any[] = [];
-      if (conversationDetail.results) {
-        // Paginated format: {count, next, previous, results: {...}}
-        messages = conversationDetail.results.messages || [];
-      } else if (conversationDetail.messages) {
-        // Direct format: {messages: [...]}
-        messages = conversationDetail.messages;
+      let allMsgs: any[] = [];
+      const extract = (page: any): any[] => {
+        if (page?.results?.messages) return page.results.messages;
+        if (page?.messages) return page.messages;
+        return [];
+      };
+
+      allMsgs = allMsgs.concat(extract(firstPage));
+
+      let nextUrl: string | null | undefined = (firstPage as any)?.next;
+      while (nextUrl) {
+        const nextPage = await getConversationPageByUrl(nextUrl);
+        console.log("Loaded conversation next page:", nextPage);
+        allMsgs = allMsgs.concat(extract(nextPage));
+        nextUrl = (nextPage as any)?.next;
       }
 
-      // Convert backend messages to frontend format
-      const convertedMessages = messages.map((msg) => ({
-        id: msg.id?.toString() || Math.random().toString(36).slice(2),
-        role: msg.role,
-        content: msg.content,
-        createdAt: msg.created_at || new Date().toISOString(),
-      }));
+      const normalized: Message[] = allMsgs
+        .map((msg) => ({
+          id: msg.id?.toString() || Math.random().toString(36).slice(2),
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+          createdAt: msg.created_at || new Date().toISOString(),
+        }))
+        .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
 
-      // Update conversation with messages
       setConversations((prev) =>
         prev.map((c) =>
           c.id === convId
             ? {
                 ...c,
-                messages: convertedMessages,
+                messages: normalized,
                 title:
-                  conversationDetail?.results?.title ||
-                  conversationDetail?.title ||
+                  (firstPage as any)?.results?.title ||
+                  (firstPage as any)?.title ||
                   c.title,
-                messageCount: convertedMessages.length,
+                messageCount: normalized.length,
               }
             : c
         )
       );
 
       console.log(
-        `Loaded ${convertedMessages.length} messages for conversation ${convId}`
+        `Loaded ${normalized.length} messages for conversation ${convId}`
       );
     } catch (error: any) {
       console.error("Failed to load conversation messages:", error);
@@ -286,6 +377,7 @@ export default function ChatPage() {
     }
   }
 
+  // Filtered conversations
   const filtered = useMemo(() => {
     if (!query.trim()) return conversations;
     const q = query.toLowerCase();
@@ -295,19 +387,28 @@ export default function ChatPage() {
     );
   }, [conversations, query]);
 
-  const pinned = filtered
-    .filter((c) => c.pinned)
-    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  const pinned = useMemo(
+    () =>
+      filtered
+        .filter((c) => c.pinned)
+        .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
+    [filtered]
+  );
 
-  const recent = filtered
-    .filter((c) => !c.pinned)
-    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
-    .slice(0, 10);
+  const recent = useMemo(
+    () =>
+      filtered
+        .filter((c) => !c.pinned)
+        .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+        .slice(0, 10),
+    [filtered]
+  );
 
-  const folderCounts = React.useMemo(() => {
+  const folderCounts = useMemo(() => {
     const map = Object.fromEntries(folders.map((f) => [f.name, 0]));
-    for (const c of conversations)
+    for (const c of conversations) {
       if (map[c.folder] != null) map[c.folder] += 1;
+    }
     return map;
   }, [conversations, folders]);
 
@@ -319,7 +420,7 @@ export default function ChatPage() {
 
   function createNewChat() {
     const id = Math.random().toString(36).slice(2);
-    const item = {
+    const item: Conversation = {
       id,
       title: "New Chat",
       updatedAt: new Date().toISOString(),
@@ -327,7 +428,7 @@ export default function ChatPage() {
       preview: "Say hello to start...",
       pinned: false,
       folder: "Work Projects",
-      messages: [], // Ensure messages array is empty for new chats
+      messages: [],
     };
     setConversations((prev) => [item, ...prev]);
     setSelectedId(id);
@@ -337,8 +438,10 @@ export default function ChatPage() {
   function createFolder(name?: string) {
     const folderName = name || prompt("Folder name");
     if (!folderName) return;
-    if (folders.some((f) => f.name.toLowerCase() === folderName.toLowerCase()))
-      return alert("Folder already exists.");
+    if (folders.some((f) => f.name.toLowerCase() === folderName.toLowerCase())) {
+      alert("Folder already exists.");
+      return;
+    }
     setFolders((prev) => [
       ...prev,
       { id: Math.random().toString(36).slice(2), name: folderName },
@@ -351,10 +454,11 @@ export default function ChatPage() {
     attachments: File[] = []
   ) {
     if (!content.trim()) return;
+    
     const now = new Date().toISOString();
-    const userMsg = {
+    const userMsg: Message = {
       id: Math.random().toString(36).slice(2),
-      role: "user" as const,
+      role: "user",
       content,
       createdAt: now,
       attachments: attachments.length ? attachments : undefined,
@@ -364,7 +468,7 @@ export default function ChatPage() {
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== convId) return c;
-        const msgs = [...(c.messages || []), userMsg];
+        const msgs = [...c.messages, userMsg];
         return {
           ...c,
           messages: msgs,
@@ -382,33 +486,40 @@ export default function ChatPage() {
     setThinkingConvId(convId);
 
     try {
-      // Backend expects simple message + system_prompt format
       const payload = {
         message: content,
         system_prompt:
           "Siz hokimiyat hujjatlari bilan ishlaydigan yordamchi AI assistantsiz. Foydalanuvchilarga rasmiy hujjatlar tayyorlashda yordam bering.",
       };
-      const res = await chatCompletion(payload);
 
-      // Debug: Log full response to see what backend returns
+      let res: any;
+      const numericId = parseInt(convId, 10);
+
+      if (isNaN(numericId) || convId.includes(".")) {
+        console.log("Sending to new conversation (POST /chat/)");
+        res = await chatCompletion(payload);
+      } else {
+        console.log(
+          `Sending to existing conversation ${numericId} (POST /chat/conversations/${numericId}/messages/)`
+        );
+        res = await sendMessageToConversation(numericId, payload);
+      }
+
       console.log("Chat response:", res);
 
-      // Try multiple possible response fields
       const text =
+        res?.reply ||
         res?.response ||
         res?.message ||
         res?.content ||
-        res?.reply ||
         res?.output ||
         res?.text ||
         (typeof res === "string" ? res : null) ||
-        JSON.stringify(res) ||
         "Javob topilmadi.";
 
       console.log("Extracted text:", text);
       appendAssistant(convId, text);
 
-      // If backend returned a conversation_id, update the local conversation ID
       if (res?.conversation_id && convId !== res.conversation_id.toString()) {
         const backendConvId = res.conversation_id.toString();
         console.log(
@@ -416,22 +527,12 @@ export default function ChatPage() {
         );
 
         setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id === convId) {
-              return { ...c, id: backendConvId };
-            }
-            return c;
-          })
+          prev.map((c) => (c.id === convId ? { ...c, id: backendConvId } : c))
         );
 
-        // Update selected ID
         setSelectedId(backendConvId);
+        setLoadedConversations((prev) => new Set(prev).add(backendConvId));
       }
-
-      // Reload conversations list from backend after a delay (without clearing messages)
-      setTimeout(() => {
-        loadConversationsFromBackend();
-      }, 2000);
     } catch (e: any) {
       const errText = e?.message || "Server xatosi";
       appendAssistant(convId, `⚠️ Xato: ${errText}`);
@@ -444,16 +545,17 @@ export default function ChatPage() {
 
   function appendAssistant(convId: string, content: string) {
     const now = new Date().toISOString();
-    const asstMsg = {
+    const asstMsg: Message = {
       id: Math.random().toString(36).slice(2),
-      role: "assistant" as const,
+      role: "assistant",
       content,
       createdAt: now,
     };
+    
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== convId) return c;
-        const msgs = [...(c.messages || []), asstMsg];
+        const msgs = [...c.messages, asstMsg];
         return {
           ...c,
           messages: msgs,
@@ -470,7 +572,7 @@ export default function ChatPage() {
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== convId) return c;
-        const msgs = (c.messages || []).map((m) =>
+        const msgs = c.messages.map((m) =>
           m.id === messageId ? { ...m, content: newContent, editedAt: now } : m
         );
         return {
@@ -486,7 +588,7 @@ export default function ChatPage() {
     const conv = conversations.find((c) => c.id === convId);
     const msg = conv?.messages?.find((m) => m.id === messageId);
     if (!msg) return;
-    await sendMessage(convId, msg.content);
+    await sendMessage(convId, msg.content, msg.attachments || []);
   }
 
   function pauseThinking() {
@@ -495,8 +597,8 @@ export default function ChatPage() {
   }
 
   function handleUseTemplate(template: { content: string }) {
-    // This will be passed down to the Composer component
-    // The Composer will handle inserting the template content
+    setIsThinking(false);
+    setThinkingConvId(null);
     if (
       composerRef.current &&
       typeof (composerRef.current as any).insertTemplate === "function"
@@ -506,12 +608,11 @@ export default function ChatPage() {
   }
 
   const composerRef = useRef<any>(null);
-
   const selected = conversations.find((c) => c.id === selectedId) || null;
 
   return (
     <div className="flex justify-center">
-      <div className="mx-auto flex  h-[calc(100vh-0px)] w-full   bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="mx-auto flex h-[calc(100vh-0px)] w-full bg-white dark:border-zinc-700 dark:bg-zinc-900">
         <CustomSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -539,7 +640,7 @@ export default function ChatPage() {
           onUseTemplate={handleUseTemplate}
           onReloadConversations={loadConversationsFromBackend}
         />
-        <DocumentViewer></DocumentViewer>
+        <DocumentViewer />
         <main className="relative flex w-1/3 flex-col">
           {!conversationsLoaded && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80">

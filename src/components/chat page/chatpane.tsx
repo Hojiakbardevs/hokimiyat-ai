@@ -135,7 +135,7 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
         <div className="mx-auto max-w-3xl px-4 py-6">
           {messages.length === 0 ? (
             <div className="flex min-h-[400px] items-center justify-center">
-              <div className="rounded-3xl bg-zinc-50/50 px-12 py-16 text-center dark:bg-zinc-800/30">
+              <div className="rounded-3xl border border-border bg-linear-to-br from-zinc-50 to-white p-6 dark:from-zinc-800/50 dark:to-zinc-900 text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
                   <svg
                     className="h-8 w-8 text-zinc-400"

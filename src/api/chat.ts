@@ -17,6 +17,9 @@ export interface ChatRequest {
 export interface ChatResponse {
     response?: string; // Backend likely returns simple response field
     message?: string;
+    reply?: string; // Backend returns reply field
+    conversation_id?: number; // Backend returns conversation_id for new chats
+    usage?: Record<string, number>; // Usage statistics
     [key: string]: any; // Allow other fields
 }
 
@@ -57,6 +60,20 @@ export async function chatCompletion(payload: ChatRequest): Promise<ChatResponse
     });
 }
 
+// Send message to existing conversation
+export async function sendMessageToConversation(
+    conversationId: number,
+    payload: { message: string; system_prompt?: string }
+): Promise<ChatResponse> {
+    return apiRequest<ChatResponse>(
+        `${API.CHAT_CONVERSATIONS}${conversationId}/messages/`,
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        }
+    );
+}
+
 export async function getConversations(): Promise<ConversationSummary[]> {
     return apiRequest<ConversationSummary[]>(API.CHAT_CONVERSATIONS, {
         method: "GET",
@@ -67,4 +84,9 @@ export async function getConversationById(conversationId: number): Promise<Conve
     return apiRequest<ConversationDetail>(`${API.CHAT_CONVERSATIONS}${conversationId}/`, {
         method: "GET",
     });
+}
+
+// Fetch a conversation page using an absolute pagination URL
+export async function getConversationPageByUrl(url: string): Promise<ConversationDetail> {
+    return apiRequest<ConversationDetail>(url, { method: "GET" });
 }

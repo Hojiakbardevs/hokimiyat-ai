@@ -73,8 +73,10 @@ export async function apiRequest<T = any>(path: string, options: ApiRequestOptio
     if (withAuth && token) {
         mergedHeaders["Authorization"] = `Bearer ${token}`;
     }
+    // Support absolute URLs (e.g., pagination links) by detecting http/https
+    const url = /^https?:\/\//i.test(path) ? path : `${API_BASE}${path}`;
 
-    const res = await fetch(`${API_BASE}${path}`, {
+    const res = await fetch(url, {
         ...rest,
         headers: mergedHeaders,
     });
@@ -92,7 +94,8 @@ export async function apiRequest<T = any>(path: string, options: ApiRequestOptio
                 retryHeaders["Content-Type"] = "application/json";
             }
             if (retryToken) retryHeaders["Authorization"] = `Bearer ${retryToken}`;
-            const retry = await fetch(`${API_BASE}${path}`, {
+            const retryUrl = /^https?:\/\//i.test(path) ? path : `${API_BASE}${path}`;
+            const retry = await fetch(retryUrl, {
                 ...rest,
                 headers: retryHeaders,
             });
