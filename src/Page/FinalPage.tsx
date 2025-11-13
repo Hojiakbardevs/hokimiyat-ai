@@ -77,7 +77,7 @@ export function FinalPage() {
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate("/generate")}
+              onClick={() => navigate("/chat-assistant")}
               className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
               <ArrowLeft className="h-4 w-4" /> Orqaga
             </button>

@@ -11,6 +11,7 @@ export const API = {
     USERS: "/accounts/users/",
     DOCUMENTS: "/documents/",
     CHAT: "/chat/",
+    CHAT_CONVERSATIONS: "/chat/conversations/",
 } as const;
 
 export type ApiEndpointKey = keyof typeof API;

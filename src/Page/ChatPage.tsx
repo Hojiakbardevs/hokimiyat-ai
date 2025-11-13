@@ -10,7 +10,11 @@ import {
 
 import ChatPane from "@/components/chat page/chatpane";
 import { CustomSidebar } from "@/components/chat page/CustomSidebar";
-import { chatCompletion } from "@/api/chat";
+import {
+  chatCompletion,
+  getConversations,
+  getConversationById,
+} from "@/api/chat";
 import { toast } from "sonner";
 import DocumentViewer from "@/components/DocumentViewer";
 
@@ -35,7 +39,7 @@ export default function ChatPage() {
       document.documentElement.setAttribute("data-theme", theme);
       document.documentElement.style.colorScheme = theme;
       localStorage.setItem("theme", theme);
-    } catch { }
+    } catch {}
   }, [theme]);
 
   useEffect(() => {
@@ -49,7 +53,7 @@ export default function ChatPage() {
       };
       media.addEventListener("change", listener);
       return () => media.removeEventListener("change", listener);
-    } catch { }
+    } catch {}
   }, []);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -66,7 +70,7 @@ export default function ChatPage() {
   useEffect(() => {
     try {
       localStorage.setItem("sidebar-collapsed", JSON.stringify(collapsed));
-    } catch { }
+    } catch {}
   }, [collapsed]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -84,7 +88,7 @@ export default function ChatPage() {
         "sidebar-collapsed-state",
         JSON.stringify(sidebarCollapsed)
       );
-    } catch { }
+    } catch {}
   }, [sidebarCollapsed]);
 
   const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
@@ -97,6 +101,103 @@ export default function ChatPage() {
 
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingConvId, setThinkingConvId] = useState<string | null>(null);
+  const [conversationsLoaded, setConversationsLoaded] = useState(false);
+
+  // Load conversations from backend and localStorage on mount
+  useEffect(() => {
+    loadConversationsFromBackend();
+  }, []);
+
+  async function loadConversationsFromBackend() {
+    try {
+      // Save current conversations with messages before reloading
+      const currentConversationsMap = new Map(
+        conversations.map((c) => [c.id, c])
+      );
+
+      // Try to load from localStorage first (for offline support)
+      const savedConversations = localStorage.getItem("chat-conversations");
+      if (savedConversations && conversations.length === 0) {
+        // Only load from localStorage if we don't have conversations yet
+        try {
+          const parsed = JSON.parse(savedConversations);
+          setConversations(parsed);
+          console.log("Loaded conversations from localStorage:", parsed.length);
+        } catch (e) {
+          console.error("Failed to parse saved conversations:", e);
+        }
+      }
+
+      // Then fetch from backend
+      const backendConversations = await getConversations();
+      console.log("Backend conversations:", backendConversations);
+
+      // If backend returned empty or invalid data, use mock data
+      if (!backendConversations || backendConversations.length === 0) {
+        console.log("Backend returned empty, keeping current conversations");
+        if (conversations.length === 0) {
+          setConversations(INITIAL_CONVERSATIONS);
+          toast.info("Demo rejimda ishlamoqda (mock data)");
+        }
+        setConversationsLoaded(true);
+        return;
+      }
+
+      // Convert backend format to frontend format
+      const converted = backendConversations.map((conv) => {
+        const existingConv = currentConversationsMap.get(conv.id.toString());
+
+        return {
+          id: conv.id.toString(),
+          title: conv.title || "New Chat",
+          updatedAt: conv.updated_at,
+          messageCount:
+            typeof conv.message_count === "string"
+              ? parseInt(conv.message_count)
+              : conv.message_count,
+          preview: conv.last_message_preview || "No messages yet",
+          pinned: existingConv?.pinned || false,
+          folder: existingConv?.folder || "Work Projects",
+          // Preserve existing messages if available
+          messages: existingConv?.messages || [],
+        };
+      });
+
+      setConversations(converted);
+      setConversationsLoaded(true);
+
+      // Save to localStorage for offline support
+      localStorage.setItem("chat-conversations", JSON.stringify(converted));
+
+      console.log(`${converted.length} ta suhbat yangilandi`);
+    } catch (error: any) {
+      console.error("Failed to load conversations:", error);
+
+      // If backend fails, keep current conversations
+      if (conversations.length === 0) {
+        console.log("Backend failed, using mock data as fallback");
+        setConversations(INITIAL_CONVERSATIONS);
+        toast.error(
+          "Backend bilan bog'lanishda xatolik. Demo rejimda ishlamoqda."
+        );
+      }
+      setConversationsLoaded(true);
+    }
+  }
+
+  // Save conversations to localStorage whenever they change
+  useEffect(() => {
+    if (conversationsLoaded && conversations.length > 0) {
+      try {
+        localStorage.setItem(
+          "chat-conversations",
+          JSON.stringify(conversations)
+        );
+      } catch (e) {
+        console.error("Failed to save conversations to localStorage:", e);
+      }
+    }
+  }, [conversations, conversationsLoaded]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -122,6 +223,68 @@ export default function ChatPage() {
       createNewChat();
     }
   }, []);
+
+  // Load conversation messages when selected
+  useEffect(() => {
+    if (selectedId && !selectedId.includes(".")) {
+      // If selectedId is a number (from backend), load messages
+      loadConversationMessages(selectedId);
+    }
+  }, [selectedId]);
+
+  async function loadConversationMessages(convId: string) {
+    try {
+      const numericId = parseInt(convId);
+      if (isNaN(numericId)) return; // Skip for local conversations
+
+      const conversationDetail = await getConversationById(numericId);
+      console.log("Loaded conversation detail:", conversationDetail);
+
+      // Handle paginated response format
+      let messages: any[] = [];
+      if (conversationDetail.results) {
+        // Paginated format: {count, next, previous, results: {...}}
+        messages = conversationDetail.results.messages || [];
+      } else if (conversationDetail.messages) {
+        // Direct format: {messages: [...]}
+        messages = conversationDetail.messages;
+      }
+
+      // Convert backend messages to frontend format
+      const convertedMessages = messages.map((msg) => ({
+        id: msg.id?.toString() || Math.random().toString(36).slice(2),
+        role: msg.role,
+        content: msg.content,
+        createdAt: msg.created_at || new Date().toISOString(),
+      }));
+
+      // Update conversation with messages
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convId
+            ? {
+                ...c,
+                messages: convertedMessages,
+                title:
+                  conversationDetail?.results?.title ||
+                  conversationDetail?.title ||
+                  c.title,
+                messageCount: convertedMessages.length,
+              }
+            : c
+        )
+      );
+
+      console.log(
+        `Loaded ${convertedMessages.length} messages for conversation ${convId}`
+      );
+    } catch (error: any) {
+      console.error("Failed to load conversation messages:", error);
+      toast.error(
+        "Xabarlarni yuklashda xatolik: " + (error.message || "Server xatosi")
+      );
+    }
+  }
 
   const filtered = useMemo(() => {
     if (!query.trim()) return conversations;
@@ -244,6 +407,31 @@ export default function ChatPage() {
 
       console.log("Extracted text:", text);
       appendAssistant(convId, text);
+
+      // If backend returned a conversation_id, update the local conversation ID
+      if (res?.conversation_id && convId !== res.conversation_id.toString()) {
+        const backendConvId = res.conversation_id.toString();
+        console.log(
+          `Updating conversation ID from ${convId} to ${backendConvId}`
+        );
+
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id === convId) {
+              return { ...c, id: backendConvId };
+            }
+            return c;
+          })
+        );
+
+        // Update selected ID
+        setSelectedId(backendConvId);
+      }
+
+      // Reload conversations list from backend after a delay (without clearing messages)
+      setTimeout(() => {
+        loadConversationsFromBackend();
+      }, 2000);
     } catch (e: any) {
       const errText = e?.message || "Server xatosi";
       appendAssistant(convId, `⚠️ Xato: ${errText}`);
@@ -349,10 +537,20 @@ export default function ChatPage() {
           templates={templates}
           setTemplates={setTemplates}
           onUseTemplate={handleUseTemplate}
+          onReloadConversations={loadConversationsFromBackend}
         />
         <DocumentViewer></DocumentViewer>
         <main className="relative flex w-1/3 flex-col">
-
+          {!conversationsLoaded && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80">
+              <div className="text-center">
+                <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Suhbatlar yuklanmoqda...
+                </p>
+              </div>
+            </div>
+          )}
           <ChatPane
             key={selected?.id}
             ref={composerRef}

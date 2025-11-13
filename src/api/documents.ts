@@ -6,7 +6,7 @@ export interface DocumentItem {
     id: string | number;
     original_file?: string;
     output_file?: string;
-    status?: "pending" | "processing" | "completed" | "failed";
+    status?: "pending" | "processing" | "completed" | "done" | "failed";
     content?: string;
     error_message?: string;
     description?: string;
@@ -31,7 +31,7 @@ export async function listDocuments(): Promise<DocumentItem[]> {
 }
 
 export async function getDocument(id: string | number): Promise<DocumentItem> {
-    return apiRequest<DocumentItem>(`${API.DOCUMENTS}${id}/`, { method: "GET" });
+    return apiRequest<DocumentItem>(`${API.DOCUMENTS}${id}`, { method: "GET" });
 }
 
 export async function createDocument(payload: CreateDocumentPayload): Promise<DocumentItem> {
@@ -53,19 +53,25 @@ export async function createDocument(payload: CreateDocumentPayload): Promise<Do
             console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
         }
 
-        return apiRequest<DocumentItem>(API.DOCUMENTS, {
+        const result = await apiRequest<DocumentItem>(API.DOCUMENTS, {
             method: "POST",
             body: form as any,
             headers: {}, // allow browser to set multipart boundary
         });
+
+        console.log("Backend response received:", result);
+        return result;
     }
     // Send as JSON if no file
-    return apiRequest<DocumentItem>(API.DOCUMENTS, {
+    const result = await apiRequest<DocumentItem>(API.DOCUMENTS, {
         method: "POST",
         body: JSON.stringify(payload),
     });
+
+    console.log("Backend response received (JSON):", result);
+    return result;
 }
 
 export async function deleteDocument(id: string | number): Promise<void> {
-    await apiRequest(`${API.DOCUMENTS}${id}/`, { method: "DELETE" });
+    await apiRequest(`${API.DOCUMENTS}${id}`, { method: "DELETE" });
 }

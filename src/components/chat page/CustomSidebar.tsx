@@ -12,6 +12,7 @@ import {
   FileText,
   Settings,
   LogOut,
+  RefreshCw,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cls } from "@/lib/utils";
@@ -63,6 +64,7 @@ interface CustomSidebarProps {
   templates: any[];
   setTemplates: React.Dispatch<any>;
   onUseTemplate: (template: { content: string }) => void;
+  onReloadConversations?: () => Promise<void>;
 }
 
 export function CustomSidebar({
@@ -90,6 +92,7 @@ export function CustomSidebar({
   onUseTemplate = () => {},
   sidebarCollapsed = false,
   setSidebarCollapsed = () => {},
+  onReloadConversations = async () => {},
 }: CustomSidebarProps) {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
@@ -290,46 +293,77 @@ export function CustomSidebar({
         initial={{ width: 320 }}
         animate={{ width: 64 }}
         transition={{ type: "spring", stiffness: 260, damping: 28 }}
-        className="z-50 flex h-full shrink-0 flex-col border-r border-border bg-background">
-        <div className="flex items-center justify-center border-b border-border px-3 py-3">
+        className="z-50 flex h-full shrink-0 flex-col border-r border-zinc-200/60 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        {/* Sidebar Header - Expand Button */}
+        <div className="flex items-center justify-center border-b border-zinc-200/60 px-3 py-3 dark:border-zinc-800">
           <button
             onClick={() => setSidebarCollapsed(false)}
-            className="rounded-xl p-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
             style={{ WebkitTapHighlightColor: "transparent" }}
             aria-label="Open sidebar"
-            title="Open sidebar">
+            title="Open sidebar (⌘B)">
             <PanelLeftOpen className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex flex-col items-center gap-4 pt-4">
+        {/* Main Actions */}
+        <div className="flex flex-1 flex-col items-center gap-2 px-2 pt-3">
+          {/* New Chat Button */}
           <button
             onClick={createNewChat}
-            className="sidebar-button"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
             style={{ WebkitTapHighlightColor: "transparent" }}
-            title="New Chat">
+            title="New Chat (⌘N)">
             <Plus className="h-5 w-5" />
           </button>
 
-          <button
-            onClick={() => setShowSearchModal(true)}
-            className="sidebar-button"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-            title="Search">
-            <SearchIcon className="h-5 w-5" />
-          </button>
-
-          <button className="sidebar-button" title="Folders">
-            <FolderIcon className="h-5 w-5" />
-          </button>
-
-          <div className="mt-auto mb-4">
-            <SettingsPopover>
-              <button className="sidebar-button" title="Settings">
-                <Settings className="h-5 w-5" />
+          {/* Recent Conversations Icons */}
+          <div className="flex flex-col items-center gap-1 w-full">
+            {recent.slice(0, 5).map((conv) => (
+              <button
+                key={conv.id}
+                onClick={() => onSelect(conv.id)}
+                className={cls(
+                  "flex h-10 w-10 items-center justify-center rounded-lg transition-colors text-xs font-medium",
+                  conv.id === selectedId
+                    ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+                    : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                )}
+                title={conv.title}
+                style={{ WebkitTapHighlightColor: "transparent" }}>
+                <FileText className="h-4 w-4" />
               </button>
-            </SettingsPopover>
+            ))}
           </div>
+        </div>
+
+        {/* Bottom Actions */}
+        <div className="flex flex-col items-center gap-2 border-t border-zinc-200/60 px-2 py-3 dark:border-zinc-800">
+          <button
+            onClick={onReloadConversations}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+            title="Reload Conversations">
+            <RefreshCw className="h-5 w-5" />
+          </button>
+
+          <SettingsPopover>
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+              title="Settings"
+              style={{ WebkitTapHighlightColor: "transparent" }}>
+              <Settings className="h-5 w-5" />
+            </button>
+          </SettingsPopover>
+
+          {/* User Avatar */}
+          <button
+            onClick={handleLogoutClick}
+            className="user-avatar grid h-10 w-10 place-items-center rounded-lg text-xs font-bold hover:opacity-80 transition-opacity"
+            title={getUserFullName()}
+            style={{ WebkitTapHighlightColor: "transparent" }}>
+            {getUserInitials()}
+          </button>
         </div>
       </motion.aside>
     );
