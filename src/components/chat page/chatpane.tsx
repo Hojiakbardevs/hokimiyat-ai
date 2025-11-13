@@ -206,7 +206,7 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                             <button
                               className="ml-1 inline-flex items-center gap-1 rounded-full border border-border bg-card/80 px-2 py-0.5 text-[11px] text-foreground hover:bg-muted transition"
                               onClick={() =>
-                                navigate("/document-view", {
+                                navigate("/generate", {
                                   state: { file: f, fileName: f.name },
                                 })
                               }>
@@ -259,6 +259,7 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
       </div>
 
       <Composer
+        key={conversation?.id}
         ref={composerRef}
         onSend={async (text: string, attachments: File[]) => {
           if (!text.trim() && attachments.length === 0) return;

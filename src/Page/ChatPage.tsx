@@ -359,6 +359,7 @@ export default function ChatPage() {
             onTemplateClick={() => setIsTemplateDrawerOpen(true)}
           />
           <ChatPane
+            key={selected?.id}
             ref={composerRef}
             conversation={selected}
             onSend={(content: string, attachments: File[]) =>

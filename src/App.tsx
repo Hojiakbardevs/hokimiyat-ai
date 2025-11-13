@@ -6,7 +6,7 @@ import { FinalPage } from "./Page/FinalPage";
 import { DocumentViewPage } from "./Page/DocumentViewPage";
 import LoginPage from "./Page/LoginPage";
 import RegisterPage from "./Page/RegisterPage";
-import ProtectedRoute from "./components/ProtectedRoute";
+// import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./Page/NotfoundPage";
 
 function App() {
@@ -16,12 +16,12 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route element={<ProtectedRoute />}>
+        {/* <Route element={<ProtectedRoute />}> */}
           <Route path="/chat-assistant" element={<ChatPage />} />
           <Route path="/generate" element={<GeneratePage />} />
           <Route path="/document-view" element={<DocumentViewPage />} />
           <Route path="/final" element={<FinalPage />} />
-        </Route>
+        {/* </Route> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
