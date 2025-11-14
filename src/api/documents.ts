@@ -53,10 +53,11 @@ export async function createDocument(payload: CreateDocumentPayload): Promise<Do
             console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
         }
 
+        // FormData uchun Content-Type ni o'rnatmaslik kerak - browser o'zi multipart/form-data o'rnatadi
         const result = await apiRequest<DocumentItem>(API.DOCUMENTS, {
             method: "POST",
             body: form as any,
-            headers: {}, // allow browser to set multipart boundary
+            headers: null as any, // headers null qilib, apiRequest ichidagi Content-Type ni o'chiramiz
         });
 
         console.log("Backend response received:", result);

@@ -1,7 +1,7 @@
 // src/api/client.ts
 // Centralized fetch client with token handling and optional auto-refresh.
 
-const DEFAULT_BASE = "http://10.219.126.243:8000/api/v1";
+const DEFAULT_BASE = "http://127.0.0.1:8000/api/v1";
 export const API_BASE: string = (import.meta as any)?.env?.VITE_API_BASE || DEFAULT_BASE;
 
 export type Tokens = { access?: string; refresh?: string };
@@ -65,14 +65,19 @@ export async function apiRequest<T = any>(path: string, options: ApiRequestOptio
     const mergedHeaders: Record<string, string> = {
         ...(headers as any),
     };
-    // Only set JSON content-type if not multipart
+
+    // Agar FormData bo'lmasa va headers null/undefined bo'lmasa, JSON content-type o'rnatamiz
     const isFormData = (rest as any)?.body instanceof FormData;
-    if (!isFormData && !("Content-Type" in mergedHeaders)) {
+
+    // headers null bo'lsa - FormData, undefined yoki {} bo'lsa - JSON
+    if (headers !== null && !isFormData && !("Content-Type" in mergedHeaders)) {
         mergedHeaders["Content-Type"] = "application/json";
     }
+
     if (withAuth && token) {
         mergedHeaders["Authorization"] = `Bearer ${token}`;
     }
+
     // Support absolute URLs (e.g., pagination links) by detecting http/https
     const url = /^https?:\/\//i.test(path) ? path : `${API_BASE}${path}`;
 
@@ -90,9 +95,12 @@ export async function apiRequest<T = any>(path: string, options: ApiRequestOptio
                 ...(headers as any),
             };
             const isRetryFormData = (rest as any)?.body instanceof FormData;
-            if (!isRetryFormData && !("Content-Type" in retryHeaders)) {
+
+            // headers null bo'lsa - FormData, undefined yoki {} bo'lsa - JSON
+            if (headers !== null && !isRetryFormData && !("Content-Type" in retryHeaders)) {
                 retryHeaders["Content-Type"] = "application/json";
             }
+
             if (retryToken) retryHeaders["Authorization"] = `Bearer ${retryToken}`;
             const retryUrl = /^https?:\/\//i.test(path) ? path : `${API_BASE}${path}`;
             const retry = await fetch(retryUrl, {

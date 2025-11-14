@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -72,7 +70,6 @@ async function extractTextFromFile(file: File): Promise<string> {
       }
       return fullText.trim() || "PDF matni topilmadi.";
     } catch (e) {
-      console.warn("PDF extraction failed:", e);
       return "PDF matnini ajratish uchun pdfjs-dist kerak. Iltimos, kutubxona o'rnatilganligini tekshiring.";
     }
   }
@@ -87,7 +84,6 @@ async function extractTextFromFile(file: File): Promise<string> {
       const plain = result.value.trim();
       return plain || "DOCX matni topilmadi.";
     } catch (e) {
-      console.warn("DOCX extraction failed:", e);
       return "DOCX matnini ajratish uchun mammoth.js kerak. Iltimos, kutubxona o'rnatilganligini tekshiring.";
     }
   }
@@ -117,7 +113,8 @@ export function DocumentViewer() {
   const [generatedText, setGeneratedText] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [showLogs, setShowLogs] = useState(true);
+  // Original matnni ko'rsatish toggli (default: yashirin)
+  const [showOriginal, setShowOriginal] = useState(false);
 
   // Template and description
   const [selectedTemplate, setSelectedTemplate] = useState<string>("ariza");
@@ -191,13 +188,14 @@ export function DocumentViewer() {
       const text = await extractTextFromFile(file);
       setOriginalText(text);
       toast.success(`${file.name} muvaffaqiyatli yuklandi!`);
+      // Yuklangandan so'ng avtomatik ko'rsatmaymiz
+      setShowOriginal(false);
 
       // Avtomatik shablon aniqlash
       if (text.trim().length > 50) {
         await detectTemplateFromText(text);
       }
     } catch (error: any) {
-      console.error("Fayl yuklash xatosi:", error);
       setOriginalText("Faylni o'qishda xatolik yuz berdi.");
       toast.error(error.message || "Faylni o'qishda xatolik yuz berdi");
     } finally {
@@ -225,8 +223,6 @@ export function DocumentViewer() {
         script_type: "latin",
       });
 
-      console.log("Backend response:", response);
-
       // Backend darhol javob qaytarishi mumkin
       if (response.content && response.content.trim()) {
         setGeneratedText(response.content);
@@ -251,8 +247,6 @@ export function DocumentViewer() {
           try {
             const { getDocument } = await import("@/api/documents");
             const updatedDoc = await getDocument(response.id);
-
-            console.log(`Polling attempt ${attempts}:`, updatedDoc);
 
             if (
               updatedDoc.status === "done" ||
@@ -280,7 +274,6 @@ export function DocumentViewer() {
             }
           } catch (pollError: any) {
             clearInterval(pollInterval);
-            console.error("Polling error:", pollError);
             throw pollError;
           }
         }, 2000);
@@ -303,7 +296,6 @@ export function DocumentViewer() {
       // Agar hech narsa bo'lmasa
       throw new Error("Backend javob qaytardi, lekin content topilmadi");
     } catch (error: any) {
-      console.error("Document generation error:", error);
       toast.error(error.message || "Xatolik yuz berdi");
 
       // Fallback simulation
@@ -350,18 +342,19 @@ export function DocumentViewer() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col w-2/3 from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
+    <div className="flex h-screen max-h-screen flex-col shrink-0 w-2/3 bg-linear-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
       {/* Main Content */}
-      <main className="mx-auto w-full flex-1 p-6">
-        <div className="grid h-full gap-6 lg:grid-cols-2">
+      <main className="mx-auto w-full flex-1  overflow-hidden">
+        <div className="grid h-full   lg:grid-cols-2">
           {/* Left Panel - Input */}
-          <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/50 bg-white p-6  dark:border-zinc-800/50 dark:bg-zinc-900 dark:shadow-zinc-950/50">
+          <div className="flex flex-col h-full bg-white p-4 xl:p-6 dark:border-zinc-800/50 dark:bg-zinc-900 dark:shadow-zinc-950/50 overflow-y-auto scrollbar-thin">
             <div className="mb-2">
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
                 Hujjat yuklash
               </h2>
               <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                PDF, DOCX, TXT formatdagi hujjatlarni yuklang va AI javob oling
+                PDF, DOCX, TXT formatdagi hujjatlarni yuklang va AI orqali javob
+                oling
               </p>
             </div>
             {/* Template Selection */}
@@ -396,8 +389,8 @@ export function DocumentViewer() {
 
             {/* Description Input */}
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                Tavsif (ixtiyoriy)
+              <label className="block text-sm my-2 font-semibold text-zinc-900 dark:text-zinc-100">
+                Tavsirlab bering (ixtiyoriy)
               </label>
               <textarea
                 value={description}
@@ -423,7 +416,7 @@ export function DocumentViewer() {
                 }
               }}
               className={cls(
-                "flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition",
+                "flex flex-col items-center justify-center rounded-xl border border-dashed my-2 p-4 transition ",
                 isDragging
                   ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/20"
                   : "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50"
@@ -433,8 +426,10 @@ export function DocumentViewer() {
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30">
                     <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <div className="text-center">
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                  <div className="text-center w-full flex flex-col items-center">
+                    <p
+                      className="font-medium text-zinc-900 dark:text-zinc-100 w-full truncate max-w-[220px] sm:max-w-[400px]"
+                      title={uploadedFile.name}>
                       {uploadedFile.name}
                     </p>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -481,94 +476,8 @@ export function DocumentViewer() {
               )}
             </div>
 
-            {/* Original text preview */}
-            {originalText && (
-              <div
-                className="flex flex-col rounded-lg border border-border bg-zinc-50 p-3 dark:bg-zinc-800/50 h-126"
-                style={{ minHeight: "300px", maxHeight: "400px" }}>
-                <div className="mb-3 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 uppercase mx-auto">
-                    Original matn
-                  </h3>
-                  {isAnalyzing && (
-                    <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      AI tahlil qilmoqda...
-                    </div>
-                  )}
-                </div>
-
-                {/* Console log toggle tugmalari */}
-                <div className="mb-3 flex items-center gap-2">
-                  <button
-                    onClick={() => setShowLogs(true)}
-                    className={cls(
-                      "flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                      showLogs
-                        ? "bg-blue-600 text-white"
-                        : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
-                    )}>
-                    Ko'rsatish
-                  </button>
-                  <button
-                    onClick={() => setShowLogs(false)}
-                    className={cls(
-                      "flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                      !showLogs
-                        ? "bg-blue-600 text-white"
-                        : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
-                    )}>
-                    Yashirish
-                  </button>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                    (Console loglar)
-                  </span>
-                </div>
-
-                {/* AI aniqlangan shablon */}
-                {detectedTemplate && (
-                  <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/30">
-                    <div className="mb-1 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                        AI tomonidan aniqlangan shablon
-                      </span>
-                    </div>
-                    <p className="text-xs text-blue-700 dark:text-blue-300">
-                      {detectedTemplate}
-                    </p>
-                  </div>
-                )}
-
-                <div
-                  className="flex-1 overflow-y-auto rounded-lg bg-white p-3 dark:bg-zinc-900"
-                  style={{ display: showLogs ? "block" : "none" }}>
-                  {extracting ? (
-                    <div className="flex items-center gap-2 text-zinc-500">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Matn ajratilmoqda...
-                    </div>
-                  ) : (
-                    <pre className="whitespace-pre-wrap font-sans text-sm text-zinc-900 dark:text-zinc-100">
-                      {originalText}
-                    </pre>
-                  )}
-                </div>
-
-                {/* Yashirilgan holatda xabar */}
-                {!showLogs && (
-                  <div className="flex-1 flex items-center justify-center rounded-lg bg-white p-6 dark:bg-zinc-900">
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      Console loglar yashirilgan. Ko'rish uchun "Ko'rsatish"
-                      tugmasini bosing.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="mt-4 flex items-center gap-3">
+            {/* Action buttons - fixed bottom area */}
+            <div className="mt-auto flex items-center gap-3 pt-4 my-3">
               <button
                 onClick={handleGenerate}
                 disabled={loading || !originalText || !uploadedFile}
@@ -591,21 +500,95 @@ export function DocumentViewer() {
                 Tozalash
               </button>
             </div>
+
+            {/* Original text preview (collapsible) */}
+            {originalText && (
+              <div
+                className={cls(
+                  "rounded-lg border border-border bg-zinc-50 dark:bg-zinc-800/50 transition-all",
+                  showOriginal
+                    ? "flex flex-col flex-1 min-h-[220px]"
+                    : "flex flex-col"
+                )}>
+                {/* Header bar */}
+                <div
+                  className={cls(
+                    "flex items-center justify-between gap-2 px-3 py-2",
+                    showOriginal
+                      ? "border-b border-zinc-200/60 dark:border-zinc-700/60"
+                      : ""
+                  )}>
+                  <h3 className="text-xs font-semibold tracking-wide text-zinc-700 dark:text-zinc-200 uppercase">
+                    Original matn
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    {isAnalyzing && (
+                      <div className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        AI
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setShowOriginal((p) => !p)}
+                      className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                      {showOriginal ? "Yashirish" : "Ko'rsatish"}
+                    </button>
+                  </div>
+                </div>
+                {/* Collapsed hint */}
+                {!showOriginal && (
+                  <div className="px-3 pb-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Matn yashirin. Ko'rish uchun tugmani bosing.
+                  </div>
+                )}
+                {/* Expanded content */}
+                {showOriginal && (
+                  <div className="flex flex-col flex-1">
+                    {detectedTemplate && (
+                      <div className="mx-3 mt-2 mb-2 rounded-md border border-blue-200 bg-blue-50 px-2 py-1.5 dark:border-blue-900 dark:bg-blue-950/30">
+                        <div className="flex items-center gap-1.5">
+                          <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-[11px] font-medium text-blue-700 dark:text-blue-300">
+                            AI shablon: {detectedTemplate}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="relative flex-1 overflow-hidden">
+                      <div className="absolute inset-0 overflow-y-auto scrollbar-thin px-3 pb-4">
+                        {extracting ? (
+                          <div className="flex items-center gap-2 text-zinc-500">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Matn ajratilmoqda...
+                          </div>
+                        ) : (
+                          <pre className="whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-zinc-900 dark:text-zinc-100">
+                            {originalText}
+                          </pre>
+                        )}
+                      </div>
+                      {/* Fade mask bottom */}
+                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-linear-to-t from-zinc-50 dark:from-zinc-900 to-transparent" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Panel - Generated Result */}
-          <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200/50 bg-white p-6  dark:border-zinc-800/50 dark:bg-zinc-900 dark:shadow-zinc-950/50">
-            <div className="flex items-center justify-between">
+          <div className="flex flex-col h-full  bg-white p-4 xl:p-6 dark:border-zinc-800/50 dark:bg-zinc-900 dark:shadow-zinc-950/50">
+            <div className="flex text-left flex-col">
               <div>
                 <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
                   AI Natija
                 </h2>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                <p className="my-1 text-sm text-zinc-500 dark:text-zinc-400">
                   Sun'iy intellekt tomonidan yaratilgan
                 </p>
               </div>
               {generatedText && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 my-2">
                   <button
                     onClick={() =>
                       navigator.clipboard?.writeText(generatedText)
@@ -643,7 +626,7 @@ export function DocumentViewer() {
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-linear-to-br from-zinc-50 to-white p-6 dark:from-zinc-800/50 dark:to-zinc-900">
+            <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-linear-to-br from-zinc-50 to-white p-4 xl:p-6 dark:from-zinc-800/50 dark:to-zinc-900">
               {loading ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4">
                   <div className="relative">

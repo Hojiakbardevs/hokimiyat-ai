@@ -295,9 +295,18 @@ export default function ChatPage() {
 
   // Load conversation messages when selected
   useEffect(() => {
-    if (selectedId && !selectedId.includes(".")) {
+    // Faqat haqiqiy backend conversation ID lar uchun xabarlarni yuklash
+    if (
+      selectedId &&
+      !selectedId.startsWith("temp-") &&
+      !selectedId.includes(".")
+    ) {
       const numericId = parseInt(selectedId, 10);
-      if (!isNaN(numericId) && !loadedConversations.has(selectedId)) {
+      if (
+        !isNaN(numericId) &&
+        numericId > 0 &&
+        !loadedConversations.has(selectedId)
+      ) {
         loadConversationMessages(selectedId);
         setLoadedConversations((prev) => new Set(prev).add(selectedId));
       }
@@ -406,10 +415,11 @@ export default function ChatPage() {
     );
   }
 
-  function createNewChat() {
-    const id = Math.random().toString(36).slice(2);
+  async function createNewChat() {
+    // Yangi chat yaratish - bu faqat UI da placeholder
+    const tempId = "temp-" + Math.random().toString(36).slice(2);
     const item: Conversation = {
-      id,
+      id: tempId,
       title: "New Chat",
       updatedAt: new Date().toISOString(),
       messageCount: 0,
@@ -419,7 +429,7 @@ export default function ChatPage() {
       messages: [],
     };
     setConversations((prev) => [item, ...prev]);
-    setSelectedId(id);
+    setSelectedId(tempId);
     setSidebarOpen(false);
   }
 
@@ -485,7 +495,12 @@ export default function ChatPage() {
       let res: any;
       const numericId = parseInt(convId, 10);
 
-      if (isNaN(numericId) || convId.includes(".")) {
+      // Agar conversation ID temp yoki noto'g'ri bo'lsa, yangi conversation yaratish
+      if (
+        isNaN(numericId) ||
+        convId.startsWith("temp-") ||
+        convId.includes(".")
+      ) {
         console.log("Sending to new conversation (POST /chat/)");
         res = await chatCompletion(payload);
       } else {
@@ -631,6 +646,8 @@ export default function ChatPage() {
 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
+        {/* Document Viewer - Conditional rendering, takes 50% when visible */}
+        <DocumentViewer />
         {/* Chat Pane - Takes remaining space or 50% if DocumentViewer is present */}
         <main className="relative flex flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-900">
           {!conversationsLoaded && (
@@ -660,9 +677,6 @@ export default function ChatPage() {
             onPauseThinking={pauseThinking}
           />
         </main>
-
-        {/* Document Viewer - Conditional rendering, takes 50% when visible */}
-        <DocumentViewer />
       </div>
     </div>
   );
