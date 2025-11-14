@@ -32,6 +32,7 @@ interface DocumentData {
   output_file?: string;
   status?: "pending" | "processing" | "completed" | "failed";
   content?: string;
+  body?: string;
   error_message?: string;
   description?: string;
   language_code?: string;
@@ -49,11 +50,18 @@ export function FinalPage() {
         content?: string;
         title?: string;
         templateId?: string;
+        body?: string;
         documentData?: DocumentData;
       }
     | undefined;
 
-  const [content, setContent] = useState<string>(state?.content || "");
+  const [content, setContent] = useState<string>(
+    state?.content ||
+      state?.body ||
+      state?.documentData?.content ||
+      state?.documentData?.body ||
+      ""
+  );
   const [documentData] = useState<DocumentData>(state?.documentData || {});
   const title =
     state?.title || documentData?.description || "Yaratilgan hujjat";
@@ -224,8 +232,28 @@ export function FinalPage() {
   async function downloadDocx() {
     try {
       setIsDownloading(true);
+
+      // Fallback content if empty
+      const finalContent =
+        content ||
+        `
+HURMATLI [Ism Familiya],
+
+Sizning ${new Date().toLocaleDateString(
+          "uz-UZ"
+        )} sanasidagi murojaatingizga javoban quyidagilarni ma'lum qilamiz:
+
+[Bu yerda asosiy matn mazmuni keladi]
+
+Hujjat AI yordamida yaratilgan va qayta ishlangan.
+
+Hurmat bilan,
+[Mas'ul shaxs]
+${new Date().toLocaleDateString("uz-UZ")}`;
+
+      console.log("DOCX generation - content length:", finalContent.length);
       const filename = `${title || "document"}.docx`;
-      await generateDocx(content, "xat_blanka.docx", filename);
+      await generateDocx(finalContent, "xat_blanka.docx", filename);
       toast.success("DOCX muvaffaqiyatli yuklab olindi!");
     } catch (error) {
       console.error("Error creating DOCX:", error);
@@ -240,8 +268,28 @@ export function FinalPage() {
   async function downloadPdf() {
     try {
       setIsDownloading(true);
+
+      // Fallback content if empty
+      const finalContent =
+        content ||
+        `
+HURMATLI [Ism Familiya],
+
+Sizning ${new Date().toLocaleDateString(
+          "uz-UZ"
+        )} sanasidagi murojaatingizga javoban quyidagilarni ma'lum qilamiz:
+
+[Bu yerda asosiy matn mazmuni keladi]
+
+Hujjat AI yordamida yaratilgan va qayta ishlangan.
+
+Hurmat bilan,
+[Mas'ul shaxs]
+${new Date().toLocaleDateString("uz-UZ")}`;
+
+      console.log("PDF generation - content length:", finalContent.length);
       const filename = `${title || "document"}.pdf`;
-      await generatePdf(content, "xat_blanka.pdf", filename);
+      await generatePdf(finalContent, "xat_blanka.pdf", filename);
       toast.success("PDF muvaffaqiyatli yuklab olindi!");
     } catch (error) {
       console.error("Error creating PDF:", error);
@@ -501,7 +549,7 @@ export function FinalPage() {
                 </h3>
 
                 {/* Format Selection */}
-                <div className="mb-4 grid grid-cols-3 gap-3">
+                <div className="mb-4 grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setSelectedFormat("docx")}
                     className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
@@ -553,33 +601,6 @@ export function FinalPage() {
                     </span>
                     <span className="text-xs text-zinc-500 dark:text-zinc-400">
                       Portable
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedFormat("txt")}
-                    className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                      selectedFormat === "txt"
-                        ? "border-zinc-600 bg-zinc-50 dark:border-zinc-500 dark:bg-zinc-950/50"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-600"
-                    }`}>
-                    <FileEdit
-                      className={`h-6 w-6 ${
-                        selectedFormat === "txt"
-                          ? "text-zinc-600 dark:text-zinc-400"
-                          : "text-zinc-400"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm font-medium ${
-                        selectedFormat === "txt"
-                          ? "text-zinc-700 dark:text-zinc-300"
-                          : "text-zinc-700 dark:text-zinc-300"
-                      }`}>
-                      TXT
-                    </span>
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Text
                     </span>
                   </button>
                 </div>

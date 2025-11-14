@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { motion } from "framer-motion";
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -141,6 +142,8 @@ export const DocumentViewer = forwardRef<
     start: number;
     end: number;
   } | null>(null);
+  // Animation trigger for merge updates
+  const [animationKey, setAnimationKey] = useState(0);
 
   useImperativeHandle(ref, () => ({
     applyMerge: (replacement: string, mode: MergeMode = "merge") => {
@@ -149,10 +152,12 @@ export const DocumentViewer = forwardRef<
         setGeneratedText((prev) =>
           prev ? prev + "\n" + replacement : replacement
         );
+        setAnimationKey((k) => k + 1);
         return;
       }
       if (mode === "replace") {
         setGeneratedText(replacement);
+        setAnimationKey((k) => k + 1);
         return;
       }
       // merge: replace selected range if available, else append
@@ -163,6 +168,7 @@ export const DocumentViewer = forwardRef<
         const after = prev.slice(selectionRange.end);
         return before + replacement + after;
       });
+      setAnimationKey((k) => k + 1);
     },
     getSelectedText: () => selectionText,
   }));
@@ -638,15 +644,6 @@ export const DocumentViewer = forwardRef<
                     <Copy className="h-4 w-4" />
                     Nusxa
                   </button>
-                  <button
-                    onClick={() =>
-                      selectionText && onSendSelectionToChat?.(selectionText)
-                    }
-                    disabled={!selectionText}
-                    className="flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50">
-                    <Wand2 className="h-4 w-4" />
-                    Tanlangan qismni chatga yuborish
-                  </button>
 
                   <button
                     onClick={() =>
@@ -721,9 +718,26 @@ export const DocumentViewer = forwardRef<
                   </div>
                 </div>
               ) : generatedText ? (
-                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">
-                  {generatedText}
-                </pre>
+                <motion.pre
+                  key={animationKey}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">
+                  {generatedText.split("").map((char, index) => (
+                    <motion.span
+                      key={`${animationKey}-${index}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{
+                        duration: 0.05,
+                        delay: index * 0.01,
+                        ease: "easeOut",
+                      }}>
+                      {char}
+                    </motion.span>
+                  ))}
+                </motion.pre>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">

@@ -34,8 +34,13 @@ export async function generateDocx(
         });
 
         // Replace {body} placeholder with content
+        // Use fallback if content is empty
+        const finalContent = content || "[Matn kiritilmagan]";
+
+        console.log('DOCX setData - content:', finalContent.substring(0, 100));
+
         doc.setData({
-            body: content,
+            body: finalContent,
         });
 
         // Render the document

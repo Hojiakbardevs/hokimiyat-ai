@@ -40,8 +40,12 @@ export async function generatePdf(
         const startX = 80; // Left margin
         const startY = height - 200; // Start from top (adjust based on your template)
 
+        // Use fallback if content is empty
+        const finalContent = content || "[Matn kiritilmagan]";
+        console.log('PDF generation - content:', finalContent.substring(0, 100));
+
         // Split content into lines that fit within maxWidth
-        const words = content.split(" ");
+        const words = finalContent.split(" ");
         const lines: string[] = [];
         let currentLine = "";
 

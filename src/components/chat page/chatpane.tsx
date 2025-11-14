@@ -5,6 +5,7 @@ import { Pencil, RefreshCw, Check, X, Square, Download } from "lucide-react";
 import Message from "@/components/chat page/message";
 import Composer from "@/components/chat page/composer";
 import { timeAgo, formatBytes } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface ThinkingMessageProps {
   onPause: () => void;
@@ -194,9 +195,30 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                   ) : (
                     <Message role={m.role}>
                       <div className="prose prose-zinc max-w-none dark:prose-invert">
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                          {m.content}
-                        </p>
+                        {m.role === "assistant" ? (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.2 }}>
+                            {m.content.split("").map((char, index) => (
+                              <motion.span
+                                key={`${m.id}-${index}`}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{
+                                  duration: 0.03,
+                                  delay: index * 0.008,
+                                  ease: "easeOut",
+                                }}>
+                                {char}
+                              </motion.span>
+                            ))}
+                          </motion.div>
+                        ) : (
+                          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                            {m.content}
+                          </p>
+                        )}
                       </div>
 
                       {m.attachments && m.attachments.length > 0 && (
