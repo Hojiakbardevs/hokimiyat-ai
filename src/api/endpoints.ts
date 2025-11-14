@@ -4,6 +4,7 @@
 export const API = {
     AUTH_TOKEN: "/auth/token/",
     AUTH_REFRESH: "/auth/token/refresh/",
+    AUTH_REGISTER: "/auth/register/",
     ACCOUNTS_LOGIN: "/accounts/login/",
     ACCOUNTS_REGISTER: "/accounts/register/",
     ACCOUNTS_USERS: "/accounts/users/",

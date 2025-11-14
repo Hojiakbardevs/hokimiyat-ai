@@ -18,16 +18,20 @@ export interface LoginResponse {
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
     try {
         // First try standard JWT token endpoint
+        // Map phone -> username for SimpleJWT compatibility
+        const jwtPayload = payload.phone && !payload.username
+            ? { username: payload.phone, password: payload.password }
+            : payload;
         const data = await apiRequest<LoginResponse>(API.AUTH_TOKEN, {
             method: "POST",
-            body: JSON.stringify(payload),
+            body: JSON.stringify(jwtPayload),
             withAuth: false,
         });
         setTokens({ access: data.access, refresh: data.refresh } as Tokens);
         return data;
     } catch (error: any) {
         console.warn("JWT token endpoint failed, trying accounts/login:", error.message);
-        // Fallback to accounts/login if JWT fails
+        // Fallback to accounts/login if JWT fails (keeps original phone/password)
         const data = await apiRequest<LoginResponse>(API.ACCOUNTS_LOGIN, {
             method: "POST",
             body: JSON.stringify(payload),
@@ -38,18 +42,35 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
     }
 }
 
-// User registration via /accounts/register/
+// User registration: prefer /auth/register/ then fallback to /accounts/register/
 export async function register(payload: {
     phone: string;
     password: string;
     first_name: string;
     last_name: string;
 }) {
-    return apiRequest(API.ACCOUNTS_REGISTER, {
-        method: "POST",
-        body: JSON.stringify(payload),
-        withAuth: false,
-    });
+    try {
+        // Primary: /auth/register/
+        return await apiRequest(API.AUTH_REGISTER, {
+            method: "POST",
+            body: JSON.stringify(payload),
+            withAuth: false,
+        });
+    } catch (errPrimary: any) {
+        // Fallback: /accounts/register/
+        try {
+            return await apiRequest(API.ACCOUNTS_REGISTER, {
+                method: "POST",
+                body: JSON.stringify(payload),
+                withAuth: false,
+            });
+        } catch (errSecondary: any) {
+            // Re-throw primary error details if both fail
+            throw new Error(
+                errSecondary?.message || errPrimary?.message || "Registration failed"
+            );
+        }
+    }
 }
 
 export async function refreshToken(refresh: string) {

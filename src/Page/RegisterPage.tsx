@@ -1,7 +1,8 @@
 // src/Page/RegisterPage.tsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { register } from "@/api/auth";
+import { register, refreshToken } from "@/api/auth";
+import { setTokens } from "@/api/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,8 +23,11 @@ import {
   UserPlus,
   AlertCircle,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
+import Logos from "@/assets/logowhite.svg";
 
 export default function RegisterPage() {
   const [phone, setPhone] = useState("");
@@ -31,6 +35,8 @@ export default function RegisterPage() {
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -56,16 +62,68 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await register({
+      const result: any = await register({
         phone,
         password,
         first_name: firstName,
         last_name: lastName,
       });
+
+      console.log("Registration successful:", result);
+
+      // If backend returns tokens on register, auto-login
+      const access: string | undefined = result?.access;
+      const refresh: string | undefined = result?.refresh;
+      if (access || refresh) {
+        try {
+          // Save what we have
+          setTokens({ access, refresh });
+          // If only refresh provided, fetch access
+          if (!access && refresh) {
+            const newTokens = await refreshToken(refresh);
+            setTokens({
+              access: newTokens.access,
+              refresh: newTokens.refresh || refresh,
+            });
+          }
+          toast.success("Ro'yxatdan o'tdingiz! Tizimga kirdingiz.");
+          navigate("/chat-assistant", { replace: true });
+          return;
+        } catch (e) {
+          // If refresh/access flow fails, fall back to login page
+          console.warn(
+            "Auto-login after register failed, redirecting to login."
+          );
+        }
+      }
+
+      // No tokens returned -> go to login as before
       toast.success("Ro'yxatdan o'tdingiz! Endi kirish mumkin.");
       navigate("/login");
     } catch (e: any) {
-      const errMsg = e?.message || "Ro'yxatdan o'tishda xatolik";
+      let errMsg = e?.message || "Ro'yxatdan o'tishda xatolik";
+
+      // Check for connection issues
+      if (
+        errMsg.includes("Failed to fetch") ||
+        errMsg.includes("ERR_CONNECTION_REFUSED")
+      ) {
+        errMsg =
+          "Backend serverga ulanishda xatolik. Server ishlamayapti yoki URL noto'g'ri. Iltimos, backend serverni ishga tushiring.";
+      } else if (errMsg.includes("404") || errMsg.includes("Not Found")) {
+        errMsg =
+          "Ro'yxatdan o'tish endpoint topilmadi. Backend developer /accounts/register/ endpoint qo'shishi kerak.";
+      } else if (errMsg.includes("401") || errMsg.includes("Authentication")) {
+        errMsg =
+          "Backend konfiguratsiyasi noto'g'ri. /accounts/register/ endpoint authentication talab qilmasligi kerak.";
+      } else if (
+        (errMsg.includes("phone") && errMsg.includes("already")) ||
+        errMsg.includes("exists")
+      ) {
+        errMsg =
+          "Bu telefon raqami allaqachon ro'yxatdan o'tgan. Iltimos, boshqa raqam kiriting yoki login qiling.";
+      }
+
       setError(errMsg);
       toast.error(errMsg);
       console.error("Register error:", e);
@@ -79,25 +137,11 @@ export default function RegisterPage() {
       <section
         id="register"
         className="relative min-h-screen flex items-center justify-center overflow-hidden p-4">
-        {/* Logo/Brand Section */}
-        <div className="absolute top-8 left-8 z-10">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">
-                H
-              </span>
-            </div>
-            <span className="text-xl font-bold hidden sm:inline">
-              Hokimiyat AI
-            </span>
-          </div>
-        </div>
-
         {/* Register Card */}
         <Card className="w-full max-w-2xl z-10 shadow-2xl border-border/50 backdrop-blur-sm bg-card/95">
           <CardHeader className="space-y-3 pb-6">
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <UserPlus className="w-7 h-7 text-primary" />
+              <img src={Logos} alt="Hokimiyat AI Logo" />
             </div>
             <CardTitle className="text-2xl font-bold text-center">
               Ro'yxatdan o'tish
@@ -173,16 +217,34 @@ export default function RegisterPage() {
                   <Lock className="w-4 h-4" />
                   Parol
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Parolingizni kiriting"
-                  autoComplete="new-password"
-                  required
-                  className="h-11"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Parolingizni kiriting"
+                    autoComplete="new-password"
+                    required
+                    className="h-11 pr-10 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden [&::-webkit-credentials-auto-fill-button]:hidden [&::-webkit-contacts-auto-fill-button]:hidden"
+                    style={
+                      {
+                        WebkitTextSecurity: showPassword ? "none" : "disc",
+                      } as any
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
+                    tabIndex={-1}>
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Confirm Password Input */}
@@ -193,16 +255,36 @@ export default function RegisterPage() {
                   <CheckCircle2 className="w-4 h-4" />
                   Parolni tasdiqlang
                 </Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Parolni qayta kiriting"
-                  autoComplete="new-password"
-                  required
-                  className="h-11"
-                />
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Parolni qayta kiriting"
+                    autoComplete="new-password"
+                    required
+                    className="h-11 pr-10 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden [&::-webkit-credentials-auto-fill-button]:hidden [&::-webkit-contacts-auto-fill-button]:hidden"
+                    style={
+                      {
+                        WebkitTextSecurity: showConfirmPassword
+                          ? "none"
+                          : "disc",
+                      } as any
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
+                    tabIndex={-1}>
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Error Alert */}

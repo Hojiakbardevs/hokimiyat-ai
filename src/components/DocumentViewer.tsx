@@ -1,11 +1,16 @@
-import { useState, useEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   FileText,
   Loader2,
   Wand2,
   Copy,
-  Download,
   Trash2,
   FileUp,
   Sparkles,
@@ -95,7 +100,21 @@ async function extractTextFromFile(file: File): Promise<string> {
 
 // Use global app templates
 
-export function DocumentViewer() {
+export type MergeMode = "merge" | "append" | "replace";
+
+export interface DocumentViewerHandle {
+  applyMerge: (replacement: string, mode?: MergeMode) => void;
+  getSelectedText: () => string;
+}
+
+export interface DocumentViewerProps {
+  onSendSelectionToChat?: (selected: string) => void;
+}
+
+export const DocumentViewer = forwardRef<
+  DocumentViewerHandle,
+  DocumentViewerProps
+>(function DocumentViewer({ onSendSelectionToChat }, ref) {
   const navigate = useNavigate();
   const location = useLocation();
   const state = (location as any).state as
@@ -115,6 +134,38 @@ export function DocumentViewer() {
   const [isDragging, setIsDragging] = useState(false);
   // Original matnni ko'rsatish toggli (default: yashirin)
   const [showOriginal, setShowOriginal] = useState(false);
+  // Selection state for AI result area
+  const resultContainerRef = useRef<HTMLDivElement | null>(null);
+  const [selectionText, setSelectionText] = useState<string>("");
+  const [selectionRange, setSelectionRange] = useState<{
+    start: number;
+    end: number;
+  } | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    applyMerge: (replacement: string, mode: MergeMode = "merge") => {
+      if (!replacement) return;
+      if (mode === "append" || !selectionRange) {
+        setGeneratedText((prev) =>
+          prev ? prev + "\n" + replacement : replacement
+        );
+        return;
+      }
+      if (mode === "replace") {
+        setGeneratedText(replacement);
+        return;
+      }
+      // merge: replace selected range if available, else append
+      setGeneratedText((prev) => {
+        if (!prev || !selectionRange)
+          return prev ? prev + "\n" + replacement : replacement;
+        const before = prev.slice(0, selectionRange.start);
+        const after = prev.slice(selectionRange.end);
+        return before + replacement + after;
+      });
+    },
+    getSelectedText: () => selectionText,
+  }));
 
   // Template and description
   const [selectedTemplate, setSelectedTemplate] = useState<string>("ariza");
@@ -322,23 +373,13 @@ export function DocumentViewer() {
     }
   }
 
-  function downloadTxt(filename: string, text: string) {
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 500);
-  }
-
   function resetAll() {
     setUploadedFile(null);
     setOriginalText("");
     setGeneratedText("");
     setDetectedTemplate(null);
+    setSelectionText("");
+    setSelectionRange(null);
   }
 
   return (
@@ -599,22 +640,32 @@ export function DocumentViewer() {
                   </button>
                   <button
                     onClick={() =>
-                      downloadTxt(
-                        `${uploadedFile?.name || "document"}.txt`,
-                        generatedText
-                      )
+                      selectionText && onSendSelectionToChat?.(selectionText)
                     }
-                    className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
-                    <Download className="h-4 w-4" />
-                    Yuklab olish
+                    disabled={!selectionText}
+                    className="flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50">
+                    <Wand2 className="h-4 w-4" />
+                    Tanlangan qismni chatga yuborish
                   </button>
+
                   <button
                     onClick={() =>
                       navigate("/final", {
                         state: {
                           content: generatedText,
                           title: uploadedFile?.name || "",
-                          templateId: detectedTemplate || "auto_detect",
+                          templateId:
+                            detectedTemplate ||
+                            selectedTemplate ||
+                            "auto_detect",
+                          documentData: {
+                            template_type:
+                              detectedTemplate || selectedTemplate || "ariza",
+                            language_code: "uz",
+                            script_type: "latin",
+                            description: description || undefined,
+                            status: "completed",
+                          },
                         },
                       })
                     }
@@ -626,7 +677,34 @@ export function DocumentViewer() {
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-linear-to-br from-zinc-50 to-white p-4 xl:p-6 dark:from-zinc-800/50 dark:to-zinc-900">
+            <div
+              ref={resultContainerRef}
+              className="flex-1 overflow-y-auto rounded-xl border border-border bg-linear-to-br from-zinc-50 to-white p-4 xl:p-6 dark:from-zinc-800/50 dark:to-zinc-900"
+              onMouseUp={() => {
+                try {
+                  const sel = window.getSelection();
+                  if (!sel || sel.rangeCount === 0) {
+                    setSelectionText("");
+                    setSelectionRange(null);
+                    return;
+                  }
+                  const text = sel.toString();
+                  setSelectionText(text);
+                  if (text && generatedText) {
+                    // Compute first matching range in generatedText
+                    const idx = generatedText.indexOf(text);
+                    if (idx !== -1) {
+                      setSelectionRange({ start: idx, end: idx + text.length });
+                    } else {
+                      setSelectionRange(null);
+                    }
+                  } else {
+                    setSelectionRange(null);
+                  }
+                } catch {
+                  // ignore
+                }
+              }}>
               {loading ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4">
                   <div className="relative">
@@ -667,6 +745,6 @@ export function DocumentViewer() {
       </main>
     </div>
   );
-}
+});
 
 export default DocumentViewer;

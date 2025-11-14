@@ -57,6 +57,7 @@ interface ChatPaneProps {
   onResendMessage?: (messageId: string) => void;
   isThinking?: boolean;
   onPauseThinking?: () => void;
+  onMergeFromAssistant?: (text: string) => void;
 }
 
 const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
@@ -67,6 +68,7 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
     onResendMessage,
     isThinking,
     onPauseThinking,
+    onMergeFromAssistant,
   },
   ref
 ) {
@@ -131,7 +133,7 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-zinc-300 scrollbar-track-transparent dark:scrollbar-thumb-zinc-700">
         <div className="mx-auto max-w-3xl px-4 py-6">
           {messages.length === 0 ? (
             <div className="flex min-h-[400px] items-center justify-center">
@@ -256,6 +258,15 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                             onClick={() => onResendMessage?.(m.id)}
                             className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800">
                             <RefreshCw className="h-3 w-3" /> Resend
+                          </button>
+                        </div>
+                      )}
+                      {m.role === "assistant" && (
+                        <div className="mt-2 flex gap-1.5">
+                          <button
+                            onClick={() => onMergeFromAssistant?.(m.content)}
+                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20">
+                            <Check className="h-3 w-3" /> Merge to Document
                           </button>
                         </div>
                       )}

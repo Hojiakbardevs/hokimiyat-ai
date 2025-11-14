@@ -21,15 +21,9 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import RichTextEditor from "@/components/rich-text-editor";
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-  HeadingLevel,
-} from "docx";
-import { saveAs } from "file-saver";
+import { generateDocx } from "@/utils/generateDocx";
+import { generatePdf } from "@/utils/generatePdf";
+import { toast } from "sonner";
 import Logoss from "@/assets/logowhite.svg";
 
 interface DocumentData {
@@ -60,11 +54,15 @@ export function FinalPage() {
     | undefined;
 
   const [content, setContent] = useState<string>(state?.content || "");
-  const [documentData, setDocumentData] = useState<DocumentData>(
-    state?.documentData || {}
-  );
+  const [documentData] = useState<DocumentData>(state?.documentData || {});
   const title =
     state?.title || documentData?.description || "Yaratilgan hujjat";
+
+  // Debug: log incoming data
+  useEffect(() => {
+    console.log("FinalPage received state:", state);
+    console.log("FinalPage documentData:", documentData);
+  }, []);
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<"docx" | "pdf" | "txt">(
     "docx"
@@ -173,8 +171,25 @@ export function FinalPage() {
       xat: "✉️",
       hisobot: "📊",
       shartnoma: "📄",
+      bayonnoma: "📄",
+      malumotnoma: "📋",
+      dalolatnoma: "📜",
     };
     return icons[type as keyof typeof icons] || "📄";
+  };
+
+  const getTemplateName = (type?: string) => {
+    const names = {
+      ariza: "Ariza",
+      buyruq: "Buyruq",
+      xat: "Xat",
+      hisobot: "Hisobot",
+      shartnoma: "Shartnoma",
+      bayonnoma: "Bayonnoma",
+      malumotnoma: "Ma'lumotnoma",
+      dalolatnoma: "Dalolatnoma",
+    };
+    return names[type as keyof typeof names] || type || "N/A";
   };
 
   const getLanguageName = (code?: string) => {
@@ -206,90 +221,32 @@ export function FinalPage() {
     setTimeout(() => URL.revokeObjectURL(url), 500);
   }
 
-  async function downloadDocx(filename: string, text: string) {
+  async function downloadDocx() {
     try {
       setIsDownloading(true);
-      const lines = text.split("\n");
-      const children: any[] = [];
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-
-        if (!trimmed) {
-          children.push(new Paragraph({ text: "" }));
-          continue;
-        }
-
-        if (trimmed.startsWith("# ")) {
-          children.push(
-            new Paragraph({
-              text: trimmed.slice(2),
-              heading: HeadingLevel.HEADING_1,
-              alignment: AlignmentType.CENTER,
-              spacing: { before: 400, after: 200 },
-            })
-          );
-        } else if (trimmed.startsWith("## ")) {
-          children.push(
-            new Paragraph({
-              text: trimmed.slice(3),
-              heading: HeadingLevel.HEADING_2,
-              spacing: { before: 300, after: 150 },
-            })
-          );
-        } else if (trimmed.startsWith("### ")) {
-          children.push(
-            new Paragraph({
-              text: trimmed.slice(4),
-              heading: HeadingLevel.HEADING_3,
-              spacing: { before: 200, after: 100 },
-            })
-          );
-        } else if (trimmed.startsWith("**") && trimmed.endsWith("**")) {
-          children.push(
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: trimmed.slice(2, -2),
-                  bold: true,
-                }),
-              ],
-              spacing: { before: 100, after: 100 },
-            })
-          );
-        } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-          children.push(
-            new Paragraph({
-              text: trimmed.slice(2),
-              bullet: { level: 0 },
-              spacing: { before: 50, after: 50 },
-            })
-          );
-        } else {
-          children.push(
-            new Paragraph({
-              text: trimmed,
-              spacing: { before: 100, after: 100 },
-            })
-          );
-        }
-      }
-
-      const doc = new Document({
-        sections: [
-          {
-            properties: {},
-            children: children,
-          },
-        ],
-      });
-
-      const blob = await Packer.toBlob(doc);
-      saveAs(blob, filename);
+      const filename = `${title || "document"}.docx`;
+      await generateDocx(content, "xat_blanka.docx", filename);
+      toast.success("DOCX muvaffaqiyatli yuklab olindi!");
     } catch (error) {
       console.error("Error creating DOCX:", error);
-      alert(
-        "DOCX yaratishda xatolik yuz berdi. Iltimos qaytadan urinib ko'ring."
+      toast.error(
+        error instanceof Error ? error.message : "DOCX yaratishda xatolik"
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
+  async function downloadPdf() {
+    try {
+      setIsDownloading(true);
+      const filename = `${title || "document"}.pdf`;
+      await generatePdf(content, "xat_blanka.pdf", filename);
+      toast.success("PDF muvaffaqiyatli yuklab olindi!");
+    } catch (error) {
+      console.error("Error creating PDF:", error);
+      toast.error(
+        error instanceof Error ? error.message : "PDF yaratishda xatolik"
       );
     } finally {
       setIsDownloading(false);
@@ -297,14 +254,16 @@ export function FinalPage() {
   }
 
   const handleDownload = async () => {
-    const filename = `${title || "document"}`;
-
     switch (selectedFormat) {
       case "docx":
-        await downloadDocx(`${filename}.docx`, content);
+        await downloadDocx();
+        break;
+      case "pdf":
+        await downloadPdf();
         break;
       case "txt":
-        downloadTxt(`${filename}.txt`, content);
+        const filename = `${title || "document"}.txt`;
+        downloadTxt(filename, content);
         break;
     }
   };
@@ -430,7 +389,7 @@ export function FinalPage() {
                         Turi
                       </p>
                       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {documentData?.template_type || "N/A"}
+                        {getTemplateName(documentData?.template_type)}
                       </p>
                     </div>
                   </div>
@@ -542,7 +501,7 @@ export function FinalPage() {
                 </h3>
 
                 {/* Format Selection */}
-                <div className="mb-4 grid grid-cols-2 gap-3">
+                <div className="mb-4 grid grid-cols-3 gap-3">
                   <button
                     onClick={() => setSelectedFormat("docx")}
                     className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
@@ -567,6 +526,33 @@ export function FinalPage() {
                     </span>
                     <span className="text-xs text-zinc-500 dark:text-zinc-400">
                       Word
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedFormat("pdf")}
+                    className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                      selectedFormat === "pdf"
+                        ? "border-red-600 bg-red-50 dark:border-red-500 dark:bg-red-950/50"
+                        : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-600"
+                    }`}>
+                    <File
+                      className={`h-6 w-6 ${
+                        selectedFormat === "pdf"
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-zinc-400"
+                      }`}
+                    />
+                    <span
+                      className={`text-sm font-medium ${
+                        selectedFormat === "pdf"
+                          ? "text-red-700 dark:text-red-300"
+                          : "text-zinc-700 dark:text-zinc-300"
+                      }`}>
+                      PDF
+                    </span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Portable
                     </span>
                   </button>
 

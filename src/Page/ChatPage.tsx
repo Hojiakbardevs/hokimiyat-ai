@@ -12,7 +12,9 @@ import {
   getConversationPageByUrl,
 } from "@/api/chat";
 import { toast } from "sonner";
-import DocumentViewer from "@/components/DocumentViewer";
+import DocumentViewer, {
+  type DocumentViewerHandle,
+} from "@/components/DocumentViewer";
 
 // Conversation type definition
 interface Message {
@@ -611,6 +613,7 @@ export default function ChatPage() {
   }
 
   const composerRef = useRef<any>(null);
+  const docViewerRef = useRef<DocumentViewerHandle | null>(null);
   const selected = conversations.find((c) => c.id === selectedId) || null;
 
   return (
@@ -646,8 +649,22 @@ export default function ChatPage() {
 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Document Viewer - Conditional rendering, takes 50% when visible */}
-        <DocumentViewer />
+        {/* Document Viewer - Selection bridge to chat */}
+        <DocumentViewer
+          ref={docViewerRef}
+          onSendSelectionToChat={(selectedText: string) => {
+            if (!selectedText) return;
+            const prompt = `Quyidagi belgilanган matnni yaxshilang/yuzating va rasmiy uslubda to'g'rilang.\n\nMatn:\n${selectedText}`;
+            if (
+              composerRef.current &&
+              typeof composerRef.current.insertTemplate === "function"
+            ) {
+              composerRef.current.insertTemplate(prompt);
+            } else {
+              toast.info("Chatga yuborish uchun kompozerni topib bo'lmadi");
+            }
+          }}
+        />
         {/* Chat Pane - Takes remaining space or 50% if DocumentViewer is present */}
         <main className="relative flex flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-900">
           {!conversationsLoaded && (
@@ -675,6 +692,15 @@ export default function ChatPage() {
             }
             isThinking={isThinking && thinkingConvId === selected?.id}
             onPauseThinking={pauseThinking}
+            onMergeFromAssistant={(text: string) => {
+              if (!text) return;
+              if (!docViewerRef.current) {
+                toast.error("Hujjat oynasi topilmadi");
+                return;
+              }
+              docViewerRef.current.applyMerge(text, "merge");
+              toast.success("Tanlangan joy yangilandi");
+            }}
           />
         </main>
       </div>
