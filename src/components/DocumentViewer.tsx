@@ -718,26 +718,32 @@ export const DocumentViewer = forwardRef<
                   </div>
                 </div>
               ) : generatedText ? (
-                <motion.pre
-                  key={animationKey}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">
-                  {generatedText.split("").map((char, index) => (
-                    <motion.span
-                      key={`${animationKey}-${index}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{
-                        duration: 0.05,
-                        delay: index * 0.01,
-                        ease: "easeOut",
-                      }}>
-                      {char}
-                    </motion.span>
-                  ))}
-                </motion.pre>
+                animationKey > 0 ? (
+                  <motion.pre
+                    key={animationKey}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">
+                    {generatedText.split("").map((char, index) => (
+                      <motion.span
+                        key={`${animationKey}-${index}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{
+                          duration: 0.05,
+                          delay: index * 0.01,
+                          ease: "easeOut",
+                        }}>
+                        {char}
+                      </motion.span>
+                    ))}
+                  </motion.pre>
+                ) : (
+                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">
+                    {generatedText}
+                  </pre>
+                )
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">

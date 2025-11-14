@@ -44,8 +44,14 @@ export async function generatePdf(
         const finalContent = content || "[Matn kiritilmagan]";
         console.log('PDF generation - content:', finalContent.substring(0, 100));
 
-        // Split content into lines that fit within maxWidth
-        const words = finalContent.split(" ");
+        // Clean content: replace newlines with spaces and normalize whitespace
+        const cleanedContent = finalContent
+            .replace(/\r?\n/g, ' ')  // Replace newlines with spaces
+            .replace(/\s+/g, ' ')     // Normalize multiple spaces to single space
+            .trim();
+
+        // Split content into words (now safe for WinAnsi)
+        const words = cleanedContent.split(" ");
         const lines: string[] = [];
         let currentLine = "";
 
