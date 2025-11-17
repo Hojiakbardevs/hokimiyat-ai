@@ -396,17 +396,17 @@ export const DocumentViewer = forwardRef<
           {/* Left Panel - Input */}
           <div className="flex flex-col h-full bg-white p-4 xl:p-6 dark:border-zinc-800/50 dark:bg-zinc-900 dark:shadow-zinc-950/50 overflow-y-auto scrollbar-thin">
             <div className="mb-2">
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
                 Hujjat yuklash
               </h2>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="mt-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
                 PDF, DOCX, TXT formatdagi hujjatlarni yuklang va AI orqali javob
                 oling
               </p>
             </div>
             {/* Template Selection */}
             <div className="space-y-3">
-              <Label className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <Label className="block text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Shablon turini tanlang
               </Label>
               <Select
@@ -428,7 +428,7 @@ export const DocumentViewer = forwardRef<
               </Select>
 
               {detectedTemplate && (
-                <p className="text-xs text-blue-600 dark:text-blue-400">
+                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
                   💡 AI taklifi: {detectedTemplate}
                 </p>
               )}
@@ -436,7 +436,7 @@ export const DocumentViewer = forwardRef<
 
             {/* Description Input */}
             <div className="space-y-2">
-              <label className="block text-sm my-2 font-semibold text-zinc-900 dark:text-zinc-100">
+              <label className="block text-sm my-2 font-bold text-zinc-900 dark:text-zinc-100">
                 Tavsirlab bering (ixtiyoriy)
               </label>
               <textarea
@@ -475,11 +475,11 @@ export const DocumentViewer = forwardRef<
                   </div>
                   <div className="text-center w-full flex flex-col items-center">
                     <p
-                      className="font-medium text-zinc-900 dark:text-zinc-100 w-full truncate max-w-[220px] sm:max-w-[400px]"
+                      className="font-bold text-zinc-900 dark:text-zinc-100 w-full truncate max-w-[220px] sm:max-w-[400px]"
                       title={uploadedFile.name}>
                       {uploadedFile.name}
                     </p>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
                       {formatBytes(uploadedFile.size)}
                     </p>
                   </div>
@@ -490,7 +490,7 @@ export const DocumentViewer = forwardRef<
                       setGeneratedText("");
                       setDetectedTemplate(null);
                     }}
-                    className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 dark:border-red-900 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40">
+                    className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 dark:border-red-900 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40">
                     <Trash2 className="h-4 w-4" />
                     O'chirish
                   </button>
@@ -500,13 +500,13 @@ export const DocumentViewer = forwardRef<
                   <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
                     <FileUp className="h-6 w-6 text-zinc-400" />
                   </div>
-                  <p className="mb-1 text-center text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  <p className="mb-1 text-center text-sm font-bold text-zinc-900 dark:text-zinc-100">
                     Faylni bu yerga tashlang yoki tanlang
                   </p>
-                  <p className="mb-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="mb-3 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     PDF, DOCX, TXT va boshqa formatlar
                   </p>
-                  <label className="cursor-pointer rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+                  <label className="cursor-pointer rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
                     Fayl tanlash
                     <input
                       type="file"
@@ -528,7 +528,7 @@ export const DocumentViewer = forwardRef<
               <button
                 onClick={handleGenerate}
                 disabled={loading || !originalText || !uploadedFile}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-linear-to-r from-blue-600 to-purple-600 px-6 py-3 font-medium text-white transition hover:from-blue-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-50">
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-linear-to-r from-blue-600 to-purple-600 px-6 py-3 font-bold text-white transition hover:from-blue-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-50">
                 {loading ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -543,7 +543,7 @@ export const DocumentViewer = forwardRef<
               </button>
               <button
                 onClick={resetAll}
-                className="rounded-lg border border-zinc-300 bg-white px-4 py-3 font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                className="rounded-lg border border-zinc-300 bg-white px-4 py-3 font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
                 Tozalash
               </button>
             </div>
@@ -565,7 +565,7 @@ export const DocumentViewer = forwardRef<
                       ? "border-b border-zinc-200/60 dark:border-zinc-700/60"
                       : ""
                   )}>
-                  <h3 className="text-xs font-semibold tracking-wide text-zinc-700 dark:text-zinc-200 uppercase">
+                  <h3 className="text-xs font-bold tracking-wide text-zinc-700 dark:text-zinc-200 uppercase">
                     Original matn
                   </h3>
                   <div className="flex items-center gap-2">
@@ -577,7 +577,7 @@ export const DocumentViewer = forwardRef<
                     )}
                     <button
                       onClick={() => setShowOriginal((p) => !p)}
-                      className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                      className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
                       {showOriginal ? "Yashirish" : "Ko'rsatish"}
                     </button>
                   </div>
@@ -627,10 +627,10 @@ export const DocumentViewer = forwardRef<
           <div className="flex flex-col h-full  bg-white p-4 xl:p-6 dark:border-zinc-800/50 dark:bg-zinc-900 dark:shadow-zinc-950/50">
             <div className="flex text-left flex-col">
               <div>
-                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+                <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
                   AI Natija
                 </h2>
-                <p className="my-1 text-sm text-zinc-500 dark:text-zinc-400">
+                <p className="my-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
                   Sun'iy intellekt tomonidan yaratilgan
                 </p>
               </div>
@@ -640,7 +640,7 @@ export const DocumentViewer = forwardRef<
                     onClick={() =>
                       navigator.clipboard?.writeText(generatedText)
                     }
-                    className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                    className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
                     <Copy className="h-4 w-4" />
                     Nusxa
                   </button>
@@ -666,7 +666,7 @@ export const DocumentViewer = forwardRef<
                         },
                       })
                     }
-                    className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+                    className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 hover:shadow-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
                     <FileText className="h-4 w-4" />
                     Finalga o'tish
                   </button>
@@ -709,10 +709,10 @@ export const DocumentViewer = forwardRef<
                     <Wand2 className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="text-center">
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                    <p className="font-bold text-zinc-900 dark:text-zinc-100">
                       AI ishlamoqda...
                     </p>
-                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    <p className="mt-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
                       Hujjat tahlil qilinmoqda
                     </p>
                   </div>
@@ -750,10 +750,10 @@ export const DocumentViewer = forwardRef<
                     <Sparkles className="h-8 w-8 text-zinc-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                    <p className="font-bold text-zinc-900 dark:text-zinc-100">
                       Natija bu yerda ko'rinadi
                     </p>
-                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    <p className="mt-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
                       "AI Generatsiya" tugmasini bosing
                     </p>
                   </div>
