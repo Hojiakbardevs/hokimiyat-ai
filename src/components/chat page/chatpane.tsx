@@ -202,17 +202,17 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                           <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ duration: 0.2 }}
-                            className="prose prose-zinc max-w-none dark:prose-invert">
+                            transition={{ duration: 0.2 }}>
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm, remarkBreaks]}>
                               {m.content}
                             </ReactMarkdown>
                           </motion.div>
                         ) : (
-                          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkBreaks]}>
                             {m.content}
-                          </p>
+                          </ReactMarkdown>
                         )}
                       </div>
 
@@ -280,7 +280,6 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                       )}
                       {m.role === "assistant" && (
                         <div className="mt-2 flex gap-1.5">
-                          {/* Show Merge button only for the last assistant message */}
                           {messages
                             .slice()
                             .reverse()

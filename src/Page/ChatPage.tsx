@@ -540,7 +540,7 @@ export default function ChatPage() {
       }
     } catch (e: any) {
       const errText = e?.message || "Server xatosi";
-      appendAssistant(convId, `⚠️ Xato: ${errText}`);
+      appendAssistant(convId, `**Xato:** ${errText}`);
       toast.error(errText);
     } finally {
       setIsThinking(false);

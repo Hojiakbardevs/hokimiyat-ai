@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import {
   Download,
   ArrowLeft,
@@ -75,6 +78,7 @@ export function FinalPage() {
   const [selectedFormat, setSelectedFormat] = useState<"docx" | "pdf" | "txt">(
     "docx"
   );
+  const [showMarkdown, setShowMarkdown] = useState(false);
 
   // Theme management (consistent with ChatPage)
   const [theme, setTheme] = useState(() => {
@@ -531,15 +535,31 @@ ${new Date().toLocaleDateString("uz-UZ")}`;
             <div className="space-y-6 lg:col-span-2">
               {/* Editor */}
               <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    Hujjat matni
-                  </h3>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {content.length} belgi
-                  </span>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      Hujjat matni
+                    </h3>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {content.length} belgi
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMarkdown((prev) => !prev)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                    {showMarkdown ? "Tahrirlash rejimi" : "Markdown ko'rinishi"}
+                  </button>
                 </div>
-                <RichTextEditor content={content} onChange={setContent} />
+                {showMarkdown ? (
+                  <div className="prose prose-zinc max-w-none text-sm dark:prose-invert">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                      {content || ""}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <RichTextEditor content={content} onChange={setContent} />
+                )}
               </div>
 
               {/* Download Section */}
