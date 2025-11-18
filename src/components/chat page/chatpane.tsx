@@ -285,11 +285,18 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                       )}
                       {m.role === "assistant" && (
                         <div className="mt-2 flex gap-1.5">
-                          <button
-                            onClick={() => onMergeFromAssistant?.(m.content)}
-                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20">
-                            <Check className="h-3 w-3" /> Merge to Document
-                          </button>
+                          {/* Show Merge button only for the last assistant message */}
+                          {messages
+                            .slice()
+                            .reverse()
+                            .find((msg) => msg.role === "assistant")?.id ===
+                            m.id && (
+                            <button
+                              onClick={() => onMergeFromAssistant?.(m.content)}
+                              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20">
+                              <Check className="h-3 w-3" /> Merge to Document
+                            </button>
+                          )}
                         </div>
                       )}
                     </Message>

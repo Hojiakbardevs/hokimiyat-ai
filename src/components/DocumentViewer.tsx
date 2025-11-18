@@ -122,15 +122,55 @@ export const DocumentViewer = forwardRef<
     | { file?: File; fileName?: string }
     | undefined;
 
-  // State
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [originalText, setOriginalText] = useState("");
+  // LocalStorage key
+  const STORAGE_KEY = "document-viewer-state";
+
+  // Load from localStorage on mount
+  const loadFromStorage = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        return data;
+      }
+    } catch (error) {
+      console.error("Error loading from localStorage:", error);
+    }
+    return null;
+  };
+
+  // Save to localStorage
+  const saveToStorage = (data: any) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error("Error saving to localStorage:", error);
+    }
+  };
+
+  // State - Initialize from localStorage if available
+  const [uploadedFile, setUploadedFile] = useState<File | null>(() => {
+    const saved = loadFromStorage();
+    return saved?.fileName ? new File([], saved.fileName) : null;
+  });
+  const [originalText, setOriginalText] = useState(() => {
+    const saved = loadFromStorage();
+    return saved?.originalText || "";
+  });
   const [extracting, setExtracting] = useState(false);
-  const [detectedTemplate, setDetectedTemplate] = useState<string | null>(null);
+  const [detectedTemplate, setDetectedTemplate] = useState<string | null>(
+    () => {
+      const saved = loadFromStorage();
+      return saved?.detectedTemplate || null;
+    }
+  );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // AI generation
-  const [generatedText, setGeneratedText] = useState("");
+  const [generatedText, setGeneratedText] = useState(() => {
+    const saved = loadFromStorage();
+    return saved?.generatedText || "";
+  });
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   // Original matnni ko'rsatish toggli (default: yashirin)
@@ -142,33 +182,108 @@ export const DocumentViewer = forwardRef<
     start: number;
     end: number;
   } | null>(null);
-  // Animation trigger for merge updates
-  const [animationKey, setAnimationKey] = useState(0);
+  // Animation states
+  const [hasShownInitialAnimation, setHasShownInitialAnimation] =
+    useState(false);
+  const [showInitialAnimation, setShowInitialAnimation] = useState(false);
+  const [mergeStage, setMergeStage] = useState<"idle" | "deleting" | "typing">(
+    "idle"
+  );
+  const [animatedText, setAnimatedText] = useState("");
+  const [pendingReplacement, setPendingReplacement] = useState("");
+
+  // Save to localStorage whenever important state changes
+  useEffect(() => {
+    if (originalText || generatedText) {
+      saveToStorage({
+        fileName: uploadedFile?.name || "",
+        originalText,
+        generatedText,
+        detectedTemplate,
+      });
+    }
+  }, [originalText, generatedText, detectedTemplate, uploadedFile?.name]);
+
+  // Trigger initial animation ONLY ONCE when generatedText first appears
+  useEffect(() => {
+    if (generatedText && !hasShownInitialAnimation) {
+      setShowInitialAnimation(true);
+      setHasShownInitialAnimation(true);
+    }
+  }, [generatedText, hasShownInitialAnimation]);
+
+  // Handle deletion animation
+  useEffect(() => {
+    if (mergeStage === "deleting" && animatedText.length > 0) {
+      const timeout = setTimeout(() => {
+        setAnimatedText((prev) => prev.slice(0, -1));
+      }, 15);
+      return () => clearTimeout(timeout);
+    }
+
+    if (mergeStage === "deleting" && animatedText.length === 0) {
+      setMergeStage("typing");
+      setAnimatedText("");
+    }
+  }, [mergeStage, animatedText.length]);
+
+  // Handle typing animation
+  useEffect(() => {
+    if (mergeStage === "typing" && pendingReplacement) {
+      let index = 0;
+      const interval = setInterval(() => {
+        index++;
+        const next = pendingReplacement.slice(0, index);
+        setAnimatedText(next);
+
+        if (index >= pendingReplacement.length) {
+          clearInterval(interval);
+
+          // Apply final merge
+          if (selectionRange) {
+            const before = generatedText.slice(0, selectionRange.start);
+            const after = generatedText.slice(selectionRange.end);
+            setGeneratedText(before + pendingReplacement + after);
+          }
+
+          setMergeStage("idle");
+          setPendingReplacement("");
+          setAnimatedText("");
+          setSelectionRange(null);
+          setShowInitialAnimation(false); // Prevent re-animation after merge
+        }
+      }, 25);
+
+      return () => clearInterval(interval);
+    }
+  }, [mergeStage, pendingReplacement, selectionRange, generatedText]);
 
   useImperativeHandle(ref, () => ({
     applyMerge: (replacement: string, mode: MergeMode = "merge") => {
       if (!replacement) return;
+
       if (mode === "append" || !selectionRange) {
-        setGeneratedText((prev) =>
+        setGeneratedText((prev: string) =>
           prev ? prev + "\n" + replacement : replacement
         );
-        setAnimationKey((k) => k + 1);
         return;
       }
+
       if (mode === "replace") {
         setGeneratedText(replacement);
-        setAnimationKey((k) => k + 1);
         return;
       }
-      // merge: replace selected range if available, else append
-      setGeneratedText((prev) => {
-        if (!prev || !selectionRange)
-          return prev ? prev + "\n" + replacement : replacement;
-        const before = prev.slice(0, selectionRange.start);
-        const after = prev.slice(selectionRange.end);
-        return before + replacement + after;
-      });
-      setAnimationKey((k) => k + 1);
+
+      // Merge with animation
+      if (selectionRange) {
+        const selected = generatedText.slice(
+          selectionRange.start,
+          selectionRange.end
+        );
+        setPendingReplacement(replacement);
+        setAnimatedText(selected);
+        setMergeStage("deleting");
+      }
     },
     getSelectedText: () => selectionText,
   }));
@@ -386,6 +501,10 @@ export const DocumentViewer = forwardRef<
     setDetectedTemplate(null);
     setSelectionText("");
     setSelectionRange(null);
+    setHasShownInitialAnimation(false);
+    setShowInitialAnimation(false);
+    // Clear localStorage
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   return (
@@ -624,7 +743,7 @@ export const DocumentViewer = forwardRef<
           </div>
 
           {/* Right Panel - Generated Result */}
-          <div className="flex flex-col h-full  bg-white p-4 xl:p-6 dark:border-zinc-800/50 dark:bg-zinc-900 dark:shadow-zinc-950/50">
+          <div className="flex flex-col h-full  bg-white p-4 xl:p-6 dark:border-zinc-800/50 dark:bg-zinc-900 dark:shadow-zinc-950/50 overflow-y-auto scrollbar-thin">
             <div className="flex text-left flex-col">
               <div>
                 <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -718,32 +837,48 @@ export const DocumentViewer = forwardRef<
                   </div>
                 </div>
               ) : generatedText ? (
-                animationKey > 0 ? (
-                  <motion.pre
-                    key={animationKey}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">
-                    {generatedText.split("").map((char, index) => (
-                      <motion.span
-                        key={`${animationKey}-${index}`}
+                <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">
+                  {mergeStage === "idle" ? (
+                    showInitialAnimation ? (
+                      <motion.pre
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{
-                          duration: 0.05,
-                          delay: index * 0.01,
-                          ease: "easeOut",
-                        }}>
-                        {char}
+                        className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                        {generatedText
+                          .split("")
+                          .map((char: string, index: number) => (
+                            <motion.span
+                              key={index}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{
+                                duration: 0.05,
+                                delay: index * 0.01,
+                                ease: "easeOut",
+                              }}>
+                              {char}
+                            </motion.span>
+                          ))}
+                      </motion.pre>
+                    ) : (
+                      <pre className="whitespace-pre-wrap">{generatedText}</pre>
+                    )
+                  ) : selectionRange ? (
+                    <>
+                      <span>
+                        {generatedText.slice(0, selectionRange.start)}
+                      </span>
+                      <motion.span
+                        key={mergeStage}
+                        className="bg-yellow-100/40 dark:bg-yellow-500/20 rounded-sm px-0.5">
+                        {animatedText}
                       </motion.span>
-                    ))}
-                  </motion.pre>
-                ) : (
-                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-zinc-900 dark:text-zinc-100">
-                    {generatedText}
-                  </pre>
-                )
+                      <span>{generatedText.slice(selectionRange.end)}</span>
+                    </>
+                  ) : (
+                    <pre className="whitespace-pre-wrap">{generatedText}</pre>
+                  )}
+                </div>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
