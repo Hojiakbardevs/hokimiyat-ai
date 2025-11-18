@@ -12,9 +12,7 @@ import {
   getConversationPageByUrl,
 } from "@/api/chat";
 import { toast } from "sonner";
-import DocumentViewer, {
-  type DocumentViewerHandle,
-} from "@/components/DocumentViewer";
+import { DocumentViewer, type DocumentViewerHandle } from "@/components/DocumentViewer";
 
 // Conversation type definition
 interface Message {
@@ -650,21 +648,7 @@ export default function ChatPage() {
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Document Viewer - Selection bridge to chat */}
-        <DocumentViewer
-          ref={docViewerRef}
-          onSendSelectionToChat={(selectedText: string) => {
-            if (!selectedText) return;
-            const prompt = `Quyidagi belgilanган matnni yaxshilang/yuzating va rasmiy uslubda to'g'rilang.\n\nMatn:\n${selectedText}`;
-            if (
-              composerRef.current &&
-              typeof composerRef.current.insertTemplate === "function"
-            ) {
-              composerRef.current.insertTemplate(prompt);
-            } else {
-              toast.info("Chatga yuborish uchun kompozerni topib bo'lmadi");
-            }
-          }}
-        />
+        <DocumentViewer ref={docViewerRef} />
         {/* Chat Pane - Takes remaining space or 50% if DocumentViewer is present */}
         <main className="relative flex flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-900">
           {!conversationsLoaded && (

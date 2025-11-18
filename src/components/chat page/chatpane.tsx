@@ -6,6 +6,9 @@ import Message from "@/components/chat page/message";
 import Composer from "@/components/chat page/composer";
 import { timeAgo, formatBytes } from "@/lib/utils";
 import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 
 interface ThinkingMessageProps {
   onPause: () => void;
@@ -199,20 +202,12 @@ const ChatPane = forwardRef<any, ChatPaneProps>(function ChatPane(
                           <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ duration: 0.2 }}>
-                            {m.content.split("").map((char, index) => (
-                              <motion.span
-                                key={`${m.id}-${index}`}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{
-                                  duration: 0.03,
-                                  delay: index * 0.008,
-                                  ease: "easeOut",
-                                }}>
-                                {char}
-                              </motion.span>
-                            ))}
+                            transition={{ duration: 0.2 }}
+                            className="prose prose-zinc max-w-none dark:prose-invert">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm, remarkBreaks]}>
+                              {m.content}
+                            </ReactMarkdown>
                           </motion.div>
                         ) : (
                           <p className="whitespace-pre-wrap text-sm leading-relaxed">
