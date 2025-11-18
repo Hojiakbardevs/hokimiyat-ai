@@ -11,7 +11,6 @@ import {
   FolderIcon,
   FileText,
   Settings,
-  LogOut,
   RefreshCw,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -29,16 +28,6 @@ import { Link, useNavigate } from "react-router-dom";
 import Logoss from "@/assets/logowhite.svg";
 import { useAuth } from "@/hooks/useAuth";
 import { getMe, type UserProfile } from "@/api/users";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 interface CustomSidebarProps {
   open: boolean;
   onClose: () => void;
@@ -99,9 +88,8 @@ export function CustomSidebar({
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const { logout, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   // Fetch user profile
@@ -145,25 +133,14 @@ export function CustomSidebar({
           (error as any)?.message?.includes("401") ||
           (error as any)?.message?.includes("unauthorized")
         ) {
-          console.log("🚪 Token invalid, logging out...");
-          await logout();
+          console.log("🚪 Token invalid, redirecting to login...");
           navigate("/login");
         }
       }
     };
 
     fetchUserProfile();
-  }, [isAuthenticated, logout, navigate]);
-
-  const handleLogoutClick = () => {
-    setShowLogoutDialog(true);
-  };
-
-  const confirmLogout = async () => {
-    await logout();
-    navigate("/login");
-    setShowLogoutDialog(false);
-  };
+  }, [isAuthenticated, navigate]);
 
   const getUserInitials = () => {
     if (!userProfile) return "??";
@@ -347,7 +324,10 @@ export function CustomSidebar({
             <RefreshCw className="h-5 w-5" />
           </button>
 
-          <SettingsPopover>
+          <SettingsPopover
+            userProfile={userProfile}
+            theme={theme}
+            onThemeChange={setTheme}>
             <button
               className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
               title="Settings"
@@ -357,13 +337,12 @@ export function CustomSidebar({
           </SettingsPopover>
 
           {/* User Avatar */}
-          <button
-            onClick={handleLogoutClick}
-            className="user-avatar grid h-10 w-10 place-items-center rounded-lg text-xs font-bold hover:opacity-80 transition-opacity"
+          <div
+            className="user-avatar grid h-10 w-10 place-items-center rounded-lg text-xs font-bold"
             title={getUserFullName()}
             style={{ WebkitTapHighlightColor: "transparent" }}>
             {getUserInitials()}
-          </button>
+          </div>
         </div>
       </motion.aside>
     );
@@ -589,7 +568,10 @@ export function CustomSidebar({
 
           <div className="mt-auto border-t border-border px-3 py-3">
             <div className="flex items-center gap-2">
-              <SettingsPopover>
+              <SettingsPopover
+                userProfile={userProfile}
+                theme={theme}
+                onThemeChange={setTheme}>
                 <button className="inline-flex items-center gap-2 sidebar-item">
                   <Settings className="h-4 w-4" /> Settings
                 </button>
@@ -610,13 +592,6 @@ export function CustomSidebar({
                   {userProfile?.phone || "No phone"}
                 </div>
               </div>
-              <button
-                onClick={handleLogoutClick}
-                className="rounded-lg p-1.5 hover:bg-accent transition-colors"
-                title="Logout"
-                aria-label="Logout">
-                <LogOut className="h-4 w-4 text-muted-foreground" />
-              </button>
             </div>
           </div>
         </aside>
@@ -826,7 +801,10 @@ export function CustomSidebar({
 
             <div className="mt-auto border-t border-border px-3 py-3">
               <div className="flex items-center gap-2">
-                <SettingsPopover>
+                <SettingsPopover
+                  userProfile={userProfile}
+                  theme={theme}
+                  onThemeChange={setTheme}>
                   <button className="inline-flex items-center gap-2 sidebar-item">
                     <Settings className="h-4 w-4" /> Settings
                   </button>
@@ -847,13 +825,6 @@ export function CustomSidebar({
                     {userProfile?.phone || "No phone"}
                   </div>
                 </div>
-                <button
-                  onClick={handleLogoutClick}
-                  className="rounded-lg p-1.5 hover:bg-accent transition-colors"
-                  title="Logout"
-                  aria-label="Logout">
-                  <LogOut className="h-4 w-4 text-muted-foreground" />
-                </button>
               </div>
             </div>
           </motion.aside>
@@ -885,24 +856,6 @@ export function CustomSidebar({
         togglePin={togglePin}
         createNewChat={createNewChat}
       />
-
-      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Chiqib ketmoqchimisiz?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tizimdan chiqib ketishni tasdiqlaysizmi? Qayta kirish uchun login
-              sahifasiga o'tasiz.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Yo'q</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmLogout}>
-              Ha, chiqish
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

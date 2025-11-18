@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -548,6 +549,130 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
                 )}
               </div>
 
+              {/* Description Presets - Button Group */}
+              <div className="space-y-3 mb-2">
+                <label className="block text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Tavsif turini tanlang (ixtiyoriy)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() =>
+                      setDescription(
+                        "Ushbu hujjat mazmuni akademik hisobot shaklida tuzilgan bo'lib, unda muammo dolzarbligi, maqsad va vazifalar, qo'llanilgan usullar, olingan natijalar hamda xulosalar ketma-ket va mantiqiy tarzda yoritib bering kengroq bo'lsin."
+                      )
+                    }
+                    variant={
+                      description.includes("akademik hisobot")
+                        ? "default"
+                        : "outline"
+                    }
+                    className={cls(
+                      "h-auto py-2.5 text-xs font-semibold text-left justify-start",
+                      description.includes("akademik hisobot") &&
+                        "bg-blue-600 hover:bg-blue-700"
+                    )}>
+                    📊 Akademik hisobot shakli
+                  </Button>
+
+                  <Button
+                    onClick={() =>
+                      setDescription(
+                        "Hujjat ilmiy-analitik yondashuv asosida ko'rib chiqilib, unda asosiy g'oya, nazariy va amaliy jihatlar, tahlil qilingan ma'lumotlar hamda ular asosida shakllangan xulosalar tizimli ravishda bayon etilsin."
+                      )
+                    }
+                    variant={
+                      description.includes("ilmiy-analitik")
+                        ? "default"
+                        : "outline"
+                    }
+                    className={cls(
+                      "h-auto py-2.5 text-xs font-semibold text-left justify-start",
+                      description.includes("ilmiy-analitik") &&
+                        "bg-blue-600 hover:bg-blue-700"
+                    )}>
+                    🔬 Ilmiy-analitik tavsif
+                  </Button>
+
+                  <Button
+                    onClick={() =>
+                      setDescription(
+                        "Mazkur hujjat uchun qisqa rasmiy annotatsiya taqdim etilib, unda hujjatning maqsadi, asosiy mazmuni, qo'llanilgan yondashuvlar va erishilgan natijalar 3–5 jumla doirasida lo'nda shaklda ifodalansin."
+                      )
+                    }
+                    variant={
+                      description.includes("rasmiy annotatsiya")
+                        ? "default"
+                        : "outline"
+                    }
+                    className={cls(
+                      "h-auto py-2.5 text-xs font-semibold text-left justify-start",
+                      description.includes("rasmiy annotatsiya") &&
+                        "bg-blue-600 hover:bg-blue-700"
+                    )}>
+                    📝 Qisqa rasmiy annotatsiya
+                  </Button>
+
+                  <Button
+                    onClick={() =>
+                      setDescription(
+                        "Hujjat mazmuni idoraviy rasmiy uslubda tavsiflanib, unda tashkiliy va boshqaruvga oid jihatlar, mas'ul tomonlar vazifalari, bajarilishi lozim bo'lgan choralar hamda tegishli normativ-huquqiy asoslar qisqa va aniq shaklda yoritilsin."
+                      )
+                    }
+                    variant={
+                      description.includes("idoraviy rasmiy")
+                        ? "default"
+                        : "outline"
+                    }
+                    className={cls(
+                      "h-auto py-2.5 text-xs font-semibold text-left justify-start",
+                      description.includes("idoraviy rasmiy") &&
+                        "bg-blue-600 hover:bg-blue-700"
+                    )}>
+                    🏢 Idoraviy rasmiy tavsif
+                  </Button>
+
+                  <Button
+                    onClick={() =>
+                      setDescription(
+                        "Hujjat texnik-funksional nuqtai nazardan tavsiflanib, unda ko'zda tutilgan tizim yoki loyiha vazifalari, asosiy funksiyalari, ishlash mexanizmlari hamda amaliy qo'llanilish sohasi batafsil bayon etilsin."
+                      )
+                    }
+                    variant={
+                      description.includes("texnik-funksional")
+                        ? "default"
+                        : "outline"
+                    }
+                    className={cls(
+                      "h-auto py-2.5 text-xs font-semibold text-left justify-start",
+                      description.includes("texnik-funksional") &&
+                        "bg-blue-600 hover:bg-blue-700"
+                    )}>
+                    ⚙️ Texnik-funksional tavsif
+                  </Button>
+
+                  <Button
+                    onClick={() =>
+                      setDescription(
+                        "Hujjat mazmuni taqriz (review) ko'rinishida baholanib, unda mavzuning dolzarbligi, ilmiy yangiligi, tuzilishining mantiqiyligi, qo'llangan usullar samaradorligi hamda amaliy ahamiyati bo'yicha qisqa, lekin mazmunan boy tavsif berilsin."
+                      )
+                    }
+                    variant={
+                      description.includes("taqriz") ||
+                      description.includes("review")
+                        ? "default"
+                        : "outline"
+                    }
+                    className={cls(
+                      "h-auto py-2.5 text-xs font-semibold text-left justify-start",
+                      (description.includes("taqriz") ||
+                        description.includes("review")) &&
+                        "bg-blue-600 hover:bg-blue-700"
+                    )}>
+                    ⭐ Taqriz / Review tavsifi
+                  </Button>
+                </div>
+              </div>
+
               {/* Description Input */}
               <div className="space-y-2">
                 <label className="block text-sm my-2 font-bold text-zinc-900 dark:text-zinc-100">
@@ -556,7 +681,7 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Hujjat haqida qo'shimcha ma'lumot kiriting..."
+                  placeholder="Hujjat haqida qo'shimcha ma'lumot kiriting yoki yuqoridagi tugmalardan birini tanlang..."
                   rows={3}
                   className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                 />
@@ -597,17 +722,18 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
                         {formatBytes(uploadedFile.size)}
                       </p>
                     </div>
-                    <button
+                    <Button
                       onClick={() => {
                         setUploadedFile(null);
                         setOriginalText("");
                         setGeneratedText("");
                         setDetectedTemplate(null);
                       }}
-                      className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 dark:border-red-900 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40">
+                      variant="destructive"
+                      className="gap-2">
                       <Trash2 className="h-4 w-4" />
                       O'chirish
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <>
@@ -639,10 +765,10 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
 
               {/* Action buttons - fixed bottom area */}
               <div className="mt-auto flex items-center gap-3 pt-4 my-3">
-                <button
+                <Button
                   onClick={handleGenerate}
                   disabled={loading || !originalText || !uploadedFile}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-linear-to-r from-blue-600 to-purple-600 px-6 py-3 font-bold text-white transition hover:from-blue-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-50">
+                  className="flex-1 bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                   {loading ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
@@ -654,12 +780,10 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
                       AI Generatsiya
                     </>
                   )}
-                </button>
-                <button
-                  onClick={resetAll}
-                  className="rounded-lg border border-zinc-300 bg-white px-4 py-3 font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                </Button>
+                <Button onClick={resetAll} variant="outline">
                   Tozalash
-                </button>
+                </Button>
               </div>
 
               {/* Original text preview (collapsible) */}
@@ -689,11 +813,12 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
                           AI
                         </div>
                       )}
-                      <button
+                      <Button
                         onClick={() => setShowOriginal((p) => !p)}
-                        className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                        size="sm"
+                        className="h-6 px-2.5 text-[11px]">
                         {showOriginal ? "Yashirish" : "Ko'rsatish"}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   {/* Collapsed hint */}
@@ -750,16 +875,17 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
                 </div>
                 {generatedText && (
                   <div className="flex items-center gap-2 my-2">
-                    <button
+                    <Button
                       onClick={() =>
                         navigator.clipboard?.writeText(generatedText)
                       }
-                      className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                      variant="outline"
+                      size="sm">
                       <Copy className="h-4 w-4" />
                       Nusxa
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
                       onClick={() =>
                         navigate("/final", {
                           state: {
@@ -780,10 +906,10 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
                           },
                         })
                       }
-                      className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 hover:shadow-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+                      size="sm">
                       <FileText className="h-4 w-4" />
                       Finalga o'tish
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
