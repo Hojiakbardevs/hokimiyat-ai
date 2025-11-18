@@ -141,7 +141,7 @@ export default function RegisterPage() {
         <Card className="w-full max-w-2xl z-10 shadow-2xl border-border/50 backdrop-blur-sm bg-card/95">
           <CardHeader className="space-y-3 pb-6">
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <img src={Logos} alt="Hokimiyat AI Logo" />
+              <img src={Logos} alt="Institut AI Logo" />
             </div>
             <CardTitle className="text-2xl font-bold text-center">
               Ro'yxatdan o'tish

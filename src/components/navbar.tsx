@@ -21,7 +21,7 @@ export default function Navbar() {
             className="flex items-center space-x-2"
             aria-label="Enterprise AI Homepage">
             <img src={Logoss} alt="Logo" className="h-8" />
-            <span className="text-2xl font-bold">Hokimiyat AI</span>
+            <span className="text-2xl font-bold">Institut AI</span>
           </Link>
         </div>
 

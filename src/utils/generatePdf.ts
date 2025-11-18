@@ -1,197 +1,319 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { saveAs } from "file-saver";
-import xatBlankaPdf from "@/assets/xat blanka.pdf?url";
+/**
+ * Professional PDF Generator for Hokimiyat AI
+ * Supports Markdown formatting with proper alignment and styling
+ * 
+ * Features:
+ * - Markdown to PDF conversion
+ * - Times New Roman 14pt (Hokimiyat standard)
+ * - Text alignment: Justify (default), Center, Left, Right
+ * - Bold, Italic, Lists
+ * - Multi-page support
+ * - Proper spacing
+ */
+
+import { jsPDF } from "jspdf";
+import { parseMarkdown, parseInlineMarkdown } from "./markdownParser";
+
+// Add Times New Roman font support (you may need to add custom fonts)
+// For now, we'll use the built-in fonts that are similar
 
 /**
- * Generate PDF from template by inserting content at specified coordinates
- * @param content - AI-generated text to insert
- * @param templateName - Template filename (default: xat_blanka.pdf)
- * @param outputName - Output filename (default: result.pdf)
+ * Generate professional PDF from markdown content
+ * @param markdownContent - Markdown formatted text
+ * @param outputFilename - Output filename (default: hujjat.pdf)
+ * @param options - Additional options
  */
 export async function generatePdf(
-    content: string,
-    templateName: string = "xat_blanka.pdf",
-    outputName: string = "result.pdf"
+    markdownContent: string,
+    outputFilename: string = "hujjat.pdf",
+    options: {
+        fontSize?: number; // Default: 14
+        lineHeight?: number; // Default: 1.5
+        pageMargin?: number; // Default: 25mm
+    } = {}
 ): Promise<void> {
     try {
-        // Load template from assets folder
-        const templatePath = templateName === "xat_blanka.pdf" ? xatBlankaPdf : `/templates/${templateName}`;
-        const response = await fetch(templatePath);
+        const {
+            fontSize = 14,
+            lineHeight = 1.5,
+            pageMargin = 25,
+        } = options;
 
-        if (!response.ok) {
-            throw new Error(`Template not found: ${templatePath}`);
-        }
+        console.log("📄 PDF generation started...");
+        console.log("Content length:", markdownContent.length);
 
-        const templateBytes = await response.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(templateBytes);
+        // Create PDF document (A4 size)
+        const doc = new jsPDF({
+            orientation: "portrait",
+            unit: "mm",
+            format: "a4",
+        });
 
-        // Get first page
-        const pages = pdfDoc.getPages();
-        const firstPage = pages[0];
-        const { height } = firstPage.getSize();
+        // Page dimensions
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const contentWidth = pageWidth - pageMargin * 2;
+        let currentY = pageMargin;
 
-        // Embed Times Roman font (similar to Times New Roman)
-        const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+        // Parse markdown
+        const elements = parseMarkdown(markdownContent);
+        console.log("Parsed elements:", elements.length);
 
-        // Text configuration
-        const fontSize = 12;
-        const lineHeight = 16;
-        const maxWidth = 450; // Maximum width for text wrapping
-        const startX = 80; // Left margin
-        const startY = height - 200; // Start from top (adjust based on your template)
+        // Helper function to add new page
+        const addNewPage = () => {
+            doc.addPage();
+            currentY = pageMargin;
+        };
 
-        // Use fallback if content is empty
-        const finalContent = content || "[Matn kiritilmagan]";
-        console.log('PDF generation - content:', finalContent.substring(0, 100));
-
-        // Clean content: replace newlines with spaces and normalize whitespace
-        const cleanedContent = finalContent
-            .replace(/\r?\n/g, ' ')  // Replace newlines with spaces
-            .replace(/\s+/g, ' ')     // Normalize multiple spaces to single space
-            .trim();
-
-        // Split content into words (now safe for WinAnsi)
-        const words = cleanedContent.split(" ");
-        const lines: string[] = [];
-        let currentLine = "";
-
-        for (const word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-
-            if (testWidth > maxWidth && currentLine) {
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
+        // Helper function to check if we need a new page
+        const checkPageBreak = (requiredSpace: number) => {
+            if (currentY + requiredSpace > pageHeight - pageMargin) {
+                addNewPage();
+                return true;
             }
-        }
+            return false;
+        };
 
-        if (currentLine) {
-            lines.push(currentLine);
-        }
+        // Process each element
+        for (const element of elements) {
+            if (element.type === "heading") {
+                // Heading
+                checkPageBreak(20);
 
-        // Draw text line by line
-        let currentY = startY;
+                const headingSize = fontSize + (6 - (element.level || 1)) * 2;
+                doc.setFontSize(headingSize);
+                doc.setFont("times", "bold");
 
-        for (const line of lines) {
-            // Check if we need a new page
-            if (currentY < 50) {
-                const newPage = pdfDoc.addPage();
-                currentY = newPage.getSize().height - 50;
-                firstPage.drawText(line, {
-                    x: startX,
-                    y: currentY,
-                    size: fontSize,
-                    font,
-                    color: rgb(0, 0, 0),
-                });
-            } else {
-                firstPage.drawText(line, {
-                    x: startX,
-                    y: currentY,
-                    size: fontSize,
-                    font,
-                    color: rgb(0, 0, 0),
-                });
+                const alignment = element.alignment || "left";
+                let xPosition = pageMargin;
+
+                if (alignment === "center") {
+                    const textWidth = doc.getTextWidth(element.content);
+                    xPosition = (pageWidth - textWidth) / 2;
+                } else if (alignment === "right") {
+                    const textWidth = doc.getTextWidth(element.content);
+                    xPosition = pageWidth - pageMargin - textWidth;
+                }
+
+                doc.text(element.content, xPosition, currentY);
+                currentY += headingSize * lineHeight;
+            } else if (element.type === "list" && element.children) {
+                // List items
+                doc.setFontSize(fontSize);
+
+                for (const listItem of element.children) {
+                    checkPageBreak(fontSize * lineHeight);
+
+                    const bulletPoint = "• ";
+                    const inlineParts = parseInlineMarkdown(listItem.content);
+
+                    // Draw bullet
+                    doc.setFont("times", "normal");
+                    doc.text(bulletPoint, pageMargin + 5, currentY);
+
+                    // Draw text with formatting
+                    let xOffset = pageMargin + 12;
+                    const maxLineWidth = contentWidth - 12;
+
+                    for (const part of inlineParts) {
+                        if (part.bold && part.italic) {
+                            doc.setFont("times", "bolditalic");
+                        } else if (part.bold) {
+                            doc.setFont("times", "bold");
+                        } else if (part.italic) {
+                            doc.setFont("times", "italic");
+                        } else {
+                            doc.setFont("times", "normal");
+                        }
+
+                        // Split text into lines if too long
+                        const words = part.text.split(" ");
+                        let currentLine = "";
+
+                        for (const word of words) {
+                            const testLine = currentLine ? `${currentLine} ${word}` : word;
+                            const testWidth = doc.getTextWidth(testLine);
+
+                            if (testWidth > maxLineWidth && currentLine) {
+                                doc.text(currentLine, xOffset, currentY);
+                                currentY += fontSize * lineHeight;
+                                checkPageBreak(fontSize * lineHeight);
+                                currentLine = word;
+                                xOffset = pageMargin + 12;
+                            } else {
+                                currentLine = testLine;
+                            }
+                        }
+
+                        if (currentLine) {
+                            doc.text(currentLine, xOffset, currentY);
+                            xOffset += doc.getTextWidth(currentLine + " ");
+                        }
+                    }
+
+                    currentY += fontSize * lineHeight;
+                }
+
+                currentY += 2; // Extra spacing after list
+            } else if (element.type === "paragraph") {
+                // Regular paragraph
+                checkPageBreak(fontSize * lineHeight);
+
+                doc.setFontSize(fontSize);
+                const alignment = element.alignment || "justify";
+                const inlineParts = parseInlineMarkdown(element.content);
+
+                // For justify alignment, we need to split into words
+                if (alignment === "justify") {
+                    const words: Array<{ text: string; bold?: boolean; italic?: boolean }> = [];
+
+                    for (const part of inlineParts) {
+                        const partWords = part.text.split(" ");
+                        partWords.forEach((word) => {
+                            if (word) {
+                                words.push({ text: word, bold: part.bold, italic: part.italic });
+                            }
+                        });
+                    } let currentLine: Array<{ text: string; bold?: boolean; italic?: boolean }> = [];
+                    let currentLineWidth = 0;
+
+                    for (let i = 0; i < words.length; i++) {
+                        const word = words[i];
+
+                        // Set font for measurement
+                        if (word.bold && word.italic) {
+                            doc.setFont("times", "bolditalic");
+                        } else if (word.bold) {
+                            doc.setFont("times", "bold");
+                        } else if (word.italic) {
+                            doc.setFont("times", "italic");
+                        } else {
+                            doc.setFont("times", "normal");
+                        }
+
+                        const wordWidth = doc.getTextWidth(word.text + " ");
+
+                        if (currentLineWidth + wordWidth > contentWidth && currentLine.length > 0) {
+                            // Draw justified line
+                            const isLastLine = i === words.length - 1;
+                            const spacing = isLastLine ? 0 : (contentWidth - currentLineWidth + doc.getTextWidth(" ") * currentLine.length) / (currentLine.length - 1 || 1);
+
+                            let xPos = pageMargin;
+                            for (const w of currentLine) {
+                                if (w.bold && w.italic) {
+                                    doc.setFont("times", "bolditalic");
+                                } else if (w.bold) {
+                                    doc.setFont("times", "bold");
+                                } else if (w.italic) {
+                                    doc.setFont("times", "italic");
+                                } else {
+                                    doc.setFont("times", "normal");
+                                }
+
+                                doc.text(w.text, xPos, currentY);
+                                xPos += doc.getTextWidth(w.text) + (isLastLine ? doc.getTextWidth(" ") : spacing);
+                            }
+
+                            currentY += fontSize * lineHeight;
+                            checkPageBreak(fontSize * lineHeight);
+                            currentLine = [word];
+                            currentLineWidth = wordWidth;
+                        } else {
+                            currentLine.push(word);
+                            currentLineWidth += wordWidth;
+                        }
+                    }
+
+                    // Draw last line (left-aligned)
+                    let xPos = pageMargin;
+                    for (const w of currentLine) {
+                        if (w.bold && w.italic) {
+                            doc.setFont("times", "bolditalic");
+                        } else if (w.bold) {
+                            doc.setFont("times", "bold");
+                        } else if (w.italic) {
+                            doc.setFont("times", "italic");
+                        } else {
+                            doc.setFont("times", "normal");
+                        }
+
+                        doc.text(w.text, xPos, currentY);
+                        xPos += doc.getTextWidth(w.text + " ");
+                    }
+                } else {
+                    // Non-justified alignment
+                    let xPos = pageMargin;
+
+                    if (alignment === "center") {
+                        const totalWidth = inlineParts.reduce((sum, part) => sum + doc.getTextWidth(part.text), 0);
+                        xPos = (pageWidth - totalWidth) / 2;
+                    } else if (alignment === "right") {
+                        const totalWidth = inlineParts.reduce((sum, part) => sum + doc.getTextWidth(part.text), 0);
+                        xPos = pageWidth - pageMargin - totalWidth;
+                    }
+
+                    for (const part of inlineParts) {
+                        if (part.bold && part.italic) {
+                            doc.setFont("times", "bolditalic");
+                        } else if (part.bold) {
+                            doc.setFont("times", "bold");
+                        } else if (part.italic) {
+                            doc.setFont("times", "italic");
+                        } else {
+                            doc.setFont("times", "normal");
+                        }
+
+                        doc.text(part.text, xPos, currentY);
+                        xPos += doc.getTextWidth(part.text + " ");
+                    }
+                }
+
+                currentY += fontSize * lineHeight + 2;
             }
-
-            currentY -= lineHeight;
         }
 
         // Save PDF
-        const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
-        saveAs(blob, outputName);
+        doc.save(outputFilename);
+        console.log("✅ PDF generated successfully:", outputFilename);
     } catch (error) {
-        console.error("Error generating PDF:", error);
+        console.error("❌ Error generating PDF:", error);
         throw new Error(
-            `PDF yaratishda xatolik: ${error instanceof Error ? error.message : "Noma'lum xatolik"}`
+            `PDF yaratishda xatolik: ${error instanceof Error ? error.message : "Noma'lum xatolik"
+            }`
         );
     }
 }
 
 /**
- * Generate PDF with custom positioning
- * @param content - AI-generated text to insert
- * @param options - Custom options for positioning and styling
+ * Generate PDF from DOCX content (HTML-based conversion)
+ * This is an alternative method using HTML as intermediate format
  */
-export async function generatePdfCustom(
-    content: string,
-    options: {
-        templateName?: string;
-        outputName?: string;
-        startX?: number;
-        startY?: number;
-        fontSize?: number;
-        lineHeight?: number;
-        maxWidth?: number;
-    } = {}
+export async function generatePdfFromHtml(
+    htmlContent: string,
+    outputFilename: string = "hujjat.pdf"
 ): Promise<void> {
-    const {
-        templateName = "xat_blanka.pdf",
-        outputName = "result.pdf",
-        startX = 80,
-        startY = 350,
-        fontSize = 12,
-        lineHeight = 16,
-        maxWidth = 450,
-    } = options;
-
     try {
-        const templatePath = templateName === "xat_blanka.pdf" ? xatBlankaPdf : `/templates/${templateName}`;
-        const response = await fetch(templatePath);
-        if (!response.ok) {
-            throw new Error(`Template not found: ${templatePath}`);
-        }
+        const doc = new jsPDF({
+            orientation: "portrait",
+            unit: "mm",
+            format: "a4",
+        });
 
-        const templateBytes = await response.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(templateBytes);
-        const pages = pdfDoc.getPages();
-        const firstPage = pages[0];
-        const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+        // Simple HTML to PDF conversion
+        // Note: This is a basic implementation. For complex HTML, use html2pdf.js
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = htmlContent;
 
-        // Split and wrap text
-        const words = content.split(" ");
-        const lines: string[] = [];
-        let currentLine = "";
+        const text = tempDiv.innerText;
+        const lines = doc.splitTextToSize(text, 160);
 
-        for (const word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+        doc.setFont("times", "normal");
+        doc.setFontSize(14);
+        doc.text(lines, 25, 25);
 
-            if (testWidth > maxWidth && currentLine) {
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
-            }
-        }
-
-        if (currentLine) {
-            lines.push(currentLine);
-        }
-
-        // Draw text
-        let currentY = startY;
-        for (const line of lines) {
-            firstPage.drawText(line, {
-                x: startX,
-                y: currentY,
-                size: fontSize,
-                font,
-                color: rgb(0, 0, 0),
-            });
-            currentY -= lineHeight;
-        }
-
-        const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
-        saveAs(blob, outputName);
+        doc.save(outputFilename);
     } catch (error) {
-        console.error("Error generating PDF:", error);
-        throw new Error(
-            `PDF yaratishda xatolik: ${error instanceof Error ? error.message : "Noma'lum xatolik"}`
-        );
+        console.error("Error generating PDF from HTML:", error);
+        throw error;
     }
 }

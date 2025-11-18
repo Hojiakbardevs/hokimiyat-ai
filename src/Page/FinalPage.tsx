@@ -8,7 +8,6 @@ import {
   Sun,
   Moon,
   FileText,
-  File,
   Calendar,
   Clock,
   Globe,
@@ -18,14 +17,10 @@ import {
   AlertCircle,
   Loader2,
   Copy,
-  Share2,
-  Printer,
   ExternalLink,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import RichTextEditor from "@/components/rich-text-editor";
-import { generateDocx } from "@/utils/generateDocx";
-import { generatePdf } from "@/utils/generatePdf";
 import { toast } from "sonner";
 import Logoss from "@/assets/logowhite.svg";
 
@@ -75,9 +70,6 @@ export function FinalPage() {
     console.log("FinalPage documentData:", documentData);
   }, []);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<"docx" | "pdf" | "txt">(
-    "docx"
-  );
   const [showMarkdown, setShowMarkdown] = useState(false);
 
   // Theme management (consistent with ChatPage)
@@ -221,112 +213,91 @@ export function FinalPage() {
     return scripts[script as keyof typeof scripts] || script || "N/A";
   };
 
-  function downloadTxt(filename: string, text: string) {
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 500);
-  }
-
-  async function downloadDocx() {
-    try {
-      setIsDownloading(true);
-
-      // Fallback content if empty
-      const finalContent =
-        content ||
-        `
-HURMATLI [Ism Familiya],
-
-Sizning ${new Date().toLocaleDateString(
-          "uz-UZ"
-        )} sanasidagi murojaatingizga javoban quyidagilarni ma'lum qilamiz:
-
-[Bu yerda asosiy matn mazmuni keladi]
-
-Hujjat AI yordamida yaratilgan va qayta ishlangan.
-
-Hurmat bilan,
-[Mas'ul shaxs]
-${new Date().toLocaleDateString("uz-UZ")}`;
-
-      console.log("DOCX generation - content length:", finalContent.length);
-      const filename = `${title || "document"}.docx`;
-      await generateDocx(finalContent, "xat_blanka.docx", filename);
-      toast.success("DOCX muvaffaqiyatli yuklab olindi!");
-    } catch (error) {
-      console.error("Error creating DOCX:", error);
-      toast.error(
-        error instanceof Error ? error.message : "DOCX yaratishda xatolik"
-      );
-    } finally {
-      setIsDownloading(false);
-    }
-  }
-
-  async function downloadPdf() {
-    try {
-      setIsDownloading(true);
-
-      // Fallback content if empty
-      const finalContent =
-        content ||
-        `
-HURMATLI [Ism Familiya],
-
-Sizning ${new Date().toLocaleDateString(
-          "uz-UZ"
-        )} sanasidagi murojaatingizga javoban quyidagilarni ma'lum qilamiz:
-
-[Bu yerda asosiy matn mazmuni keladi]
-
-Hujjat AI yordamida yaratilgan va qayta ishlangan.
-
-Hurmat bilan,
-[Mas'ul shaxs]
-${new Date().toLocaleDateString("uz-UZ")}`;
-
-      console.log("PDF generation - content length:", finalContent.length);
-      const filename = `${title || "document"}.pdf`;
-      await generatePdf(finalContent, "xat_blanka.pdf", filename);
-      toast.success("PDF muvaffaqiyatli yuklab olindi!");
-    } catch (error) {
-      console.error("Error creating PDF:", error);
-      toast.error(
-        error instanceof Error ? error.message : "PDF yaratishda xatolik"
-      );
-    } finally {
-      setIsDownloading(false);
-    }
-  }
-
   const handleDownload = async () => {
-    switch (selectedFormat) {
-      case "docx":
-        await downloadDocx();
-        break;
-      case "pdf":
-        await downloadPdf();
-        break;
-      case "txt":
-        const filename = `${title || "document"}.txt`;
-        downloadTxt(filename, content);
-        break;
+    if (!content) {
+      toast.error("❌ Matn bo'sh, yuklab olish mumkin emas");
+      return;
+    }
+
+    try {
+      setIsDownloading(true);
+
+      const filename = `${title || "hujjat"}_${Date.now()}`;
+
+      // DOCX yaratish va yuklab olish
+      const docxBlob = await generateDocxAsBlob(content, "xat_blanka.docx");
+
+      const { saveAs } = await import("file-saver");
+      saveAs(docxBlob, `${filename}.docx`);
+
+      toast.success("✅ DOCX muvaffaqiyatli yuklab olindi!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error(
+        error instanceof Error
+          ? `❌ ${error.message}`
+          : "❌ DOCX yaratishda xatolik"
+      );
+    } finally {
+      setIsDownloading(false);
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(content);
-    alert("Matn nusxalandi!");
+  // DOCX ni Blob sifatida yaratish
+  const generateDocxAsBlob = async (
+    content: string,
+    templateName: string
+  ): Promise<Blob> => {
+    const Docxtemplater = (await import("docxtemplater")).default;
+    const PizZip = (await import("pizzip")).default;
+    const { cleanMarkdown } = await import("@/utils/cleanMarkdown");
+    const xatBlankaDocx = (await import("@/assets/xat_blanka.docx?url"))
+      .default;
+
+    const templatePath =
+      templateName === "xat_blanka.docx"
+        ? xatBlankaDocx
+        : `/templates/${templateName}`;
+    const response = await fetch(templatePath);
+
+    if (!response.ok) {
+      throw new Error(`Template not found: ${templatePath}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = new PizZip(arrayBuffer);
+
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+      delimiters: { start: "{", end: "}" },
+    });
+
+    const cleanedContent = cleanMarkdown(content || "[Matn kiritilmagan]");
+    doc.setData({ body: cleanedContent });
+    doc.render();
+
+    return doc.getZip().generate({
+      type: "blob",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      compression: "DEFLATE",
+    });
   };
 
-  const printDocument = () => {
-    window.print();
+  const copyToClipboard = async () => {
+    if (!content) {
+      toast.error("❌ Matn bo'sh");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success("✅ Matn nusxalandi!");
+    } catch (error) {
+      console.error("Copy error:", error);
+      toast.error("❌ Nusxalashda xatolik");
+    }
   };
 
   return (
@@ -419,7 +390,7 @@ ${new Date().toLocaleDateString("uz-UZ")}`;
                   {documentData?.id && (
                     <div className="flex items-start gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                        <File className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                        <FileText className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                       </div>
                       <div className="flex-1">
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -509,7 +480,7 @@ ${new Date().toLocaleDateString("uz-UZ")}`;
               </div>
 
               {/* Quick Actions */}
-              <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              {/* <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <h3 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Tez amallar
                 </h3>
@@ -528,7 +499,7 @@ ${new Date().toLocaleDateString("uz-UZ")}`;
                     <Share2 className="h-4 w-4" /> Ulashish
                   </button>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Main Content - Editor & Download */}
@@ -565,67 +536,10 @@ ${new Date().toLocaleDateString("uz-UZ")}`;
               {/* Download Section */}
               <div className="rounded-xl border border-zinc-200 bg-linear-to-br from-blue-50 to-blue-100 p-6 shadow-sm dark:border-zinc-800 dark:from-blue-950/30 dark:to-blue-900/30">
                 <h3 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  Yuklab olish
+                  Amallar
                 </h3>
 
-                {/* Format Selection */}
-                <div className="mb-4 grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setSelectedFormat("docx")}
-                    className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                      selectedFormat === "docx"
-                        ? "border-blue-600 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/50"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-600"
-                    }`}>
-                    <FileText
-                      className={`h-6 w-6 ${
-                        selectedFormat === "docx"
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-zinc-400"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm font-medium ${
-                        selectedFormat === "docx"
-                          ? "text-blue-700 dark:text-blue-300"
-                          : "text-zinc-700 dark:text-zinc-300"
-                      }`}>
-                      DOCX
-                    </span>
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Word
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedFormat("pdf")}
-                    className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                      selectedFormat === "pdf"
-                        ? "border-red-600 bg-red-50 dark:border-red-500 dark:bg-red-950/50"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-600"
-                    }`}>
-                    <File
-                      className={`h-6 w-6 ${
-                        selectedFormat === "pdf"
-                          ? "text-red-600 dark:text-red-400"
-                          : "text-zinc-400"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm font-medium ${
-                        selectedFormat === "pdf"
-                          ? "text-red-700 dark:text-red-300"
-                          : "text-zinc-700 dark:text-zinc-300"
-                      }`}>
-                      PDF
-                    </span>
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Portable
-                    </span>
-                  </button>
-                </div>
-
-                {/* Download Button */}
+                {/* Download DOCX Button */}
                 <button
                   onClick={handleDownload}
                   disabled={isDownloading}
@@ -638,13 +552,24 @@ ${new Date().toLocaleDateString("uz-UZ")}`;
                   ) : (
                     <>
                       <Download className="h-5 w-5" />
-                      {selectedFormat.toUpperCase()} formatda yuklab olish
+                      DOCX formatda yuklab olish
                     </>
                   )}
                 </button>
 
+                {/* PDF yaratish funksiyasi vaqtincha o'chirilgan */}
+
+                {/* Copy Button */}
+                <button
+                  onClick={copyToClipboard}
+                  disabled={isDownloading}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-zinc-300 bg-white px-6 py-3 text-sm font-semibold text-zinc-700 transition-all hover:bg-zinc-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                  <Copy className="h-5 w-5" />
+                  Matnni nusxalash
+                </button>
+
                 <p className="mt-3 text-center text-xs text-zinc-600 dark:text-zinc-400">
-                  Hujjat {selectedFormat.toUpperCase()} formatda yuklab olinadi
+                  Template: xat_blanka.docx
                 </p>
               </div>
             </div>
@@ -659,12 +584,12 @@ ${new Date().toLocaleDateString("uz-UZ")}`;
             <div className="flex items-center gap-3">
               <img
                 src={Logoss}
-                alt="Hokimiyat AI logotipi"
+                alt="Institut AI logotipi"
                 className="w-10 h-10"
               />
               <div className="flex flex-col">
                 <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                  Hokimiyat AI
+                  Institut AI
                 </span>
                 <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
                   Hujjatni tahrirlang va kerakli formatda yuklab oling

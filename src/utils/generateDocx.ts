@@ -1,11 +1,22 @@
+/**
+ * Simple DOCX Generator for Hokimiyat AI
+ * Uses existing DOCX template and replaces {body} placeholder
+ * 
+ * Features:
+ * - Template-based generation (xat_blanka.docx)
+ * - Simple text replacement
+ * - Preserves template formatting, headers, footers, logos
+ */
+
 import Docxtemplater from "docxtemplater";
 import PizZip from "pizzip";
 import { saveAs } from "file-saver";
-import xatBlankaDocx from "@/assets/xat blanka.docx?url";
+import xatBlankaDocx from "@/assets/xat_blanka.docx?url";
+import { cleanMarkdown } from "./cleanMarkdown";
 
 /**
  * Generate DOCX from template by replacing {body} placeholder
- * @param content - AI-generated text to insert
+ * @param content - Text content to insert
  * @param templateName - Template filename (default: xat_blanka.docx)
  * @param outputName - Output filename (default: result.docx)
  */
@@ -15,6 +26,8 @@ export async function generateDocx(
     outputName: string = "result.docx"
 ): Promise<void> {
     try {
+        console.log("📄 DOCX generation started...");
+
         // Load template from assets folder
         const templatePath = templateName === "xat_blanka.docx" ? xatBlankaDocx : `/templates/${templateName}`;
         const response = await fetch(templatePath);
@@ -33,14 +46,12 @@ export async function generateDocx(
             delimiters: { start: "{", end: "}" },
         });
 
-        // Replace {body} placeholder with content
-        // Use fallback if content is empty
-        const finalContent = content || "[Matn kiritilmagan]";
-
-        console.log('DOCX setData - content:', finalContent.substring(0, 100));
+        // Clean Markdown and replace {body} placeholder
+        const cleanedContent = cleanMarkdown(content || "[Matn kiritilmagan]");
+        console.log('DOCX setData - cleaned content:', cleanedContent.substring(0, 100));
 
         doc.setData({
-            body: finalContent,
+            body: cleanedContent,
         });
 
         // Render the document
@@ -49,15 +60,15 @@ export async function generateDocx(
         // Generate output
         const output = doc.getZip().generate({
             type: "blob",
-            mimeType:
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             compression: "DEFLATE",
         });
 
         // Download the file
         saveAs(output, outputName);
+        console.log("✅ DOCX generated successfully:", outputName);
     } catch (error) {
-        console.error("Error generating DOCX:", error);
+        console.error("❌ Error generating DOCX:", error);
         throw new Error(
             `DOCX yaratishda xatolik: ${error instanceof Error ? error.message : "Noma'lum xatolik"}`
         );

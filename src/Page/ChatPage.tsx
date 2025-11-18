@@ -489,7 +489,7 @@ export default function ChatPage() {
       const payload = {
         message: content,
         system_prompt:
-          "Siz hokimiyat hujjatlari bilan ishlaydigan yordamchi AI assistantsiz. Foydalanuvchilarga rasmiy hujjatlar tayyorlashda yordam bering.",
+          "Siz institut hujjatlari bilan ishlaydigan yordamchi AI assistantsiz. Foydalanuvchilarga rasmiy hujjatlar tayyorlashda yordam bering.",
       };
 
       let res: any;

@@ -34,12 +34,12 @@ export const HomePage = () => {
             <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
               {/* Yuqori tag */}
               <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm mb-6">
-                Hokimiyat AI yechimi
+                Institut AI yechimi
               </div>
 
               {/* Asosiy sarlavha */}
               <h1 className="text-5xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-6">
-                Rasmiy hujjatlarni raqamli boshqarish: Hokimiyat AI
+                Rasmiy hujjatlarni raqamli boshqarish: Institut AI
               </h1>
 
               {/* Tavsif */}
@@ -96,7 +96,7 @@ export const HomePage = () => {
                   Tizim qanday ishlaydi
                 </h2>
                 <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                  Hokimiyat AI — rasmiy hujjatlarni avtomatlashtirish uchun
+                  Institut AI — rasmiy hujjatlarni avtomatlashtirish uchun
                   mo'ljallangan sun'iy intellekt tizimi. Uchta oddiy qadam
                   orqali hujjatingiz tayyor bo'ladi.
                 </p>
@@ -176,7 +176,7 @@ export const HomePage = () => {
                   Maxsus tashkilotlar uchun narxlash
                 </h2>
                 <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                  Hokimiyat AI — har bir tashkilotning o'ziga xos ehtiyojlari va
+                  Institut AI — har bir tashkilotning o'ziga xos ehtiyojlari va
                   miqyosiga mos maxsus narxlash paketlarini taklif etadi.
                 </p>
               </div>
