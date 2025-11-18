@@ -71,6 +71,10 @@ export function FinalPage() {
   }, []);
   const [isDownloading, setIsDownloading] = useState(false);
   const [showMarkdown, setShowMarkdown] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
+  const [currentScript, setCurrentScript] = useState<"latin" | "cyrillic">(
+    "latin"
+  );
 
   // Theme management (consistent with ChatPage)
   const [theme, setTheme] = useState(() => {
@@ -205,14 +209,6 @@ export function FinalPage() {
     return languages[code as keyof typeof languages] || code || "N/A";
   };
 
-  const getScriptName = (script?: string) => {
-    const scripts = {
-      latin: "Lotin",
-      cyrillic: "Kirill",
-    };
-    return scripts[script as keyof typeof scripts] || script || "N/A";
-  };
-
   const handleDownload = async () => {
     if (!content) {
       toast.error("❌ Matn bo'sh, yuklab olish mumkin emas");
@@ -300,6 +296,57 @@ export function FinalPage() {
     }
   };
 
+  const convertScript = async () => {
+    if (!content) {
+      toast.error("❌ Matn bo'sh");
+      return;
+    }
+
+    try {
+      setIsConverting(true);
+      // Backend swagger misoliga ko'ra: type = "1" -> "odam" → "одам" (lotin → kirill)
+      // Shuning uchun hozirgi yozuv lotin bo'lsa 1, kirill bo'lsa 0 yuboramiz
+      const targetType = currentScript === "latin" ? "1" : "0";
+
+      const response = await fetch(
+        "http://192.168.95.133:8000/api/v1/documents/tilim/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            data: content,
+            type: targetType,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Konvertatsiya xatolik");
+      }
+
+      const result = await response.json();
+
+      if (result.text) {
+        setContent(result.text);
+        setCurrentScript(currentScript === "latin" ? "cyrillic" : "latin");
+        toast.success(
+          `✅ Matn ${
+            currentScript === "latin" ? "Kiril" : "Lotin"
+          } yozuviga o'girildi!`
+        );
+      } else {
+        toast.error("❌ Konvertatsiya natijasi topilmadi");
+      }
+    } catch (error) {
+      console.error("Convert error:", error);
+      toast.error("❌ Konvertatsiya xatolik");
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-linear-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900">
       {/* Header */}
@@ -355,7 +402,7 @@ export function FinalPage() {
               yarating
             </p>
             <button
-              onClick={() => navigate("/generate")}
+              onClick={() => navigate("/chat-assistant")}
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-all hover:bg-blue-700 hover:shadow-lg dark:bg-blue-500 dark:hover:bg-blue-600">
               <FileEdit className="h-4 w-4" /> Hujjat yaratish
             </button>
@@ -440,7 +487,7 @@ export function FinalPage() {
                         Yozuv
                       </p>
                       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {getScriptName(documentData?.script_type)}
+                        {currentScript === "latin" ? "Lotin" : "Kirill"}
                       </p>
                     </div>
                   </div>
@@ -480,7 +527,7 @@ export function FinalPage() {
               </div>
 
               {/* Quick Actions */}
-              {/* <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <h3 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Tez amallar
                 </h3>
@@ -491,15 +538,20 @@ export function FinalPage() {
                     <Copy className="h-4 w-4" /> Nusxalash
                   </button>
                   <button
-                    onClick={printDocument}
-                    className="flex w-full items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
-                    <Printer className="h-4 w-4" /> Chop etish
-                  </button>
-                  <button className="flex w-full items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
-                    <Share2 className="h-4 w-4" /> Ulashish
+                    onClick={convertScript}
+                    disabled={isConverting}
+                    className="flex w-full items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                    {isConverting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Type className="h-4 w-4" />
+                    )}
+                    {currentScript === "latin"
+                      ? "Kiril yozuviga"
+                      : "Lotin yozuviga"}
                   </button>
                 </div>
-              </div> */}
+              </div>
             </div>
 
             {/* Main Content - Editor & Download */}
@@ -512,18 +564,33 @@ export function FinalPage() {
                       Hujjat matni
                     </h3>
                     <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                      {content.length} belgi
+                      {content.length} belgi •{" "}
+                      {currentScript === "latin" ? "Lotin" : "Kirill"} yozuvi
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowMarkdown((prev) => !prev)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
-                    {showMarkdown ? "Tahrirlash rejimi" : "Markdown ko'rinishi"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={convertScript}
+                      disabled={isConverting}
+                      className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                      {isConverting ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Type className="h-3 w-3" />
+                      )}
+                      {currentScript === "latin" ? "Kiril" : "Lotin"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowMarkdown((prev) => !prev)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                      {showMarkdown ? "Tahrirlash" : "Ko'rinish"}
+                    </button>
+                  </div>
                 </div>
                 {showMarkdown ? (
-                  <div className="prose prose-zinc max-w-none text-sm dark:prose-invert">
+                  <div className="prose prose-zinc max-w-none dark:prose-invert h-96 w-full overflow-y-auto rounded-xl border border-zinc-200 bg-white p-4 text-sm leading-relaxed dark:border-zinc-800 dark:bg-zinc-900 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 scrollbar-thumb-rounded-full scrollbar-track-rounded-full">
                     <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                       {content || ""}
                     </ReactMarkdown>
@@ -556,8 +623,6 @@ export function FinalPage() {
                     </>
                   )}
                 </button>
-
-                {/* PDF yaratish funksiyasi vaqtincha o'chirilgan */}
 
                 {/* Copy Button */}
                 <button

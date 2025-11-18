@@ -104,15 +104,15 @@ export function RichTextEditor({
         </div>
       )}
 
-      {/* Simple textarea editor */}
+      {/* Chiroyli textarea editor */}
       <textarea
         value={content}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={
-          placeholder ||
-          "Matn kiriting... (API Markdown formatda keladi, lekin siz oddiy yoki Markdown matn kiritishingiz mumkin)"
-        }
-        className="min-h-96 w-full resize-y rounded-xl border border-zinc-200 bg-white p-4 text-sm leading-relaxed text-zinc-900 outline-none transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 scrollbar-thumb-rounded-full scrollbar-track-rounded-full"
+        placeholder={placeholder || "Matn kiriting..."}
+        className="min-h-96 w-full resize-y rounded-xl border border-zinc-200 bg-white p-4 text-base leading-relaxed text-zinc-900 outline-none transition focus:ring-2 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 scrollbar-thumb-rounded-full scrollbar-track-rounded-full"
+        style={{
+          fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+        }}
         {...rest}
       />
     </div>
