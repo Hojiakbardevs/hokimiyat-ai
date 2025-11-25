@@ -103,6 +103,27 @@ export default function RegisterPage() {
     } catch (e: any) {
       let errMsg = e?.message || "Ro'yxatdan o'tishda xatolik";
 
+      // Parse JSON error response if exists
+      try {
+        const errorData =
+          typeof errMsg === "string" && errMsg.startsWith("{")
+            ? JSON.parse(errMsg)
+            : null;
+
+        if (errorData) {
+          if (errorData.phone) {
+            errMsg =
+              "Bu telefon raqami allaqachon ro'yxatdan o'tgan. Boshqa raqam kiriting yoki login qiling.";
+          } else if (errorData.email) {
+            errMsg = "Bu email allaqachon ro'yxatdan o'tgan.";
+          } else if (errorData.detail) {
+            errMsg = errorData.detail;
+          } else {
+            errMsg = JSON.stringify(errorData);
+          }
+        }
+      } catch {}
+
       // Check for connection issues
       if (
         errMsg.includes("Failed to fetch") ||
@@ -116,12 +137,6 @@ export default function RegisterPage() {
       } else if (errMsg.includes("401") || errMsg.includes("Authentication")) {
         errMsg =
           "Backend konfiguratsiyasi noto'g'ri. /accounts/register/ endpoint authentication talab qilmasligi kerak.";
-      } else if (
-        (errMsg.includes("phone") && errMsg.includes("already")) ||
-        errMsg.includes("exists")
-      ) {
-        errMsg =
-          "Bu telefon raqami allaqachon ro'yxatdan o'tgan. Iltimos, boshqa raqam kiriting yoki login qiling.";
       }
 
       setError(errMsg);
