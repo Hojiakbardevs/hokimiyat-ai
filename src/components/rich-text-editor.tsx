@@ -74,23 +74,23 @@ export function RichTextEditor({
                   <div className="space-y-1 text-xs">
                     <p className="font-semibold">Markdown formatlash:</p>
                     <p>
-                      <code className="bg-muted px-1"># Sarlavha</code> - Katta
+                      <code className="bg-muted text-foreground px-1"># Sarlavha</code> - Katta
                       sarlavha (o'rtaga)
                     </p>
                     <p>
-                      <code className="bg-muted px-1">## Sarlavha</code> -
+                      <code className="bg-muted text-foreground px-1">## Sarlavha</code> -
                       Kichik sarlavha
                     </p>
                     <p>
-                      <code className="bg-muted px-1">**qalin**</code> - Qalin
+                      <code className="bg-muted text-foreground px-1">**qalin**</code> - Qalin
                       matn
                     </p>
                     <p>
-                      <code className="bg-muted px-1">*kursiv*</code> - Kursiv
+                      <code className="bg-muted text-foreground px-1">*kursiv*</code> - Kursiv
                       matn
                     </p>
                     <p>
-                      <code className="bg-muted px-1">- element</code> - Ro'yxat
+                      <code className="bg-muted text-foreground px-1">- element</code> - Ro'yxat
                       elementi
                     </p>
                     <p className="text-muted-foreground mt-2">

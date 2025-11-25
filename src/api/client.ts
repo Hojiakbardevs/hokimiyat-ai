@@ -1,8 +1,8 @@
 // src/api/client.ts
 // Centralized fetch client with token handling and optional auto-refresh.
 
-const HOSTNAME = (typeof window !== "undefined" && (window.location as any)?.hostname) || "127.0.0.1";
-const DEFAULT_BASE = `http://${HOSTNAME}:8000/api/v1`;
+// Development: use proxy path, Production: use direct URL
+const DEFAULT_BASE = import.meta.env.DEV ? '/api/v1' : 'http://10.10.0.60/api/v1';
 export const API_BASE: string = (import.meta as any)?.env?.VITE_API_BASE || DEFAULT_BASE;
 
 export type Tokens = { access?: string; refresh?: string };

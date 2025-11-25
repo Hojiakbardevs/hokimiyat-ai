@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-
 import ChatPane from "@/components/chat page/chatpane";
 import { CustomSidebar } from "@/components/chat page/CustomSidebar";
 import {
@@ -12,7 +11,11 @@ import {
   getConversationPageByUrl,
 } from "@/api/chat";
 import { toast } from "sonner";
-import { DocumentViewer, type DocumentViewerHandle } from "@/components/DocumentViewer";
+import {
+  DocumentViewer,
+  type DocumentViewerHandle,
+} from "@/components/DocumentViewer";
+import { PanelLeftOpen, FileText } from "lucide-react";
 
 // Conversation type definition
 interface Message {
@@ -113,6 +116,21 @@ export default function ChatPage() {
       JSON.stringify(sidebarCollapsed)
     );
   }, [sidebarCollapsed]);
+
+  // Document Viewer visibility state
+  const [showDocumentViewer, setShowDocumentViewer] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const saved = localStorage.getItem("show-document-viewer");
+    return saved ? JSON.parse(saved) : true;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(
+      "show-document-viewer",
+      JSON.stringify(showDocumentViewer)
+    );
+  }, [showDocumentViewer]);
 
   // Conversations state
   const [conversations, setConversations] = useState<Conversation[]>(() => {
@@ -295,7 +313,6 @@ export default function ChatPage() {
 
   // Load conversation messages when selected
   useEffect(() => {
-    // Faqat haqiqiy backend conversation ID lar uchun xabarlarni yuklash
     if (
       selectedId &&
       !selectedId.startsWith("temp-") &&
@@ -416,7 +433,6 @@ export default function ChatPage() {
   }
 
   async function createNewChat() {
-    // Yangi chat yaratish - bu faqat UI da placeholder
     const tempId = "temp-" + Math.random().toString(36).slice(2);
     const item: Conversation = {
       id: tempId,
@@ -464,7 +480,6 @@ export default function ChatPage() {
       attachments: attachments.length ? attachments : undefined,
     };
 
-    // Optimistic user message append
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== convId) return c;
@@ -495,7 +510,6 @@ export default function ChatPage() {
       let res: any;
       const numericId = parseInt(convId, 10);
 
-      // Agar conversation ID temp yoki noto'g'ri bo'lsa, yangi conversation yaratish
       if (
         isNaN(numericId) ||
         convId.startsWith("temp-") ||
@@ -615,7 +629,7 @@ export default function ChatPage() {
   const selected = conversations.find((c) => c.id === selectedId) || null;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-zinc-900">
       {/* Sidebar */}
       <CustomSidebar
         open={sidebarOpen}
@@ -645,12 +659,56 @@ export default function ChatPage() {
         onReloadConversations={loadConversationsFromBackend}
       />
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Document Viewer - Selection bridge to chat */}
-        <DocumentViewer ref={docViewerRef} />
-        {/* Chat Pane - Takes remaining space or 50% if DocumentViewer is present */}
-        <main className="relative flex flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-900">
+      {/* Main Content Area - Responsive Layout */}
+      <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
+        {/* Mobile: Sidebar Toggle Button */}
+        <div className="md:hidden flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">
+            <PanelLeftOpen className="h-5 w-5" />
+            Menu
+          </button>
+
+          {/* Mobile: Document Viewer Toggle */}
+          <button
+            onClick={() => setShowDocumentViewer(!showDocumentViewer)}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">
+            <FileText className="h-5 w-5" />
+            {showDocumentViewer ? "Hide Doc" : "Show Doc"}
+          </button>
+        </div>
+
+        {/* Desktop: Document Viewer Toggle Button */}
+        <button
+          onClick={() => setShowDocumentViewer(!showDocumentViewer)}
+          className="hidden lg:flex fixed top-4 right-4 z-30 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700">
+          <FileText className="h-4 w-4" />
+          {showDocumentViewer ? "Hide Document" : "Show Document"}
+        </button>
+
+        {/* Document Viewer - Conditional & Responsive */}
+        {showDocumentViewer && (
+          <div
+            className={`
+            w-full lg:w-2/3 
+            ${!showDocumentViewer ? "hidden" : "block"}
+            h-full
+            border-b lg:border-b-0 lg:border-r 
+            border-zinc-200 dark:border-zinc-800
+            overflow-hidden
+          `}>
+            <DocumentViewer ref={docViewerRef} />
+          </div>
+        )}
+
+        {/* Chat Pane - Responsive Width */}
+        <main
+          className={`
+          relative flex-1 flex-col overflow-hidden 
+          bg-white dark:bg-zinc-900
+          ${showDocumentViewer ? "hidden md:flex" : "flex"}
+        `}>
           {!conversationsLoaded && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80">
               <div className="text-center">

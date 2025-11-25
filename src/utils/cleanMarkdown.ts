@@ -36,7 +36,15 @@ export function cleanMarkdown(markdown: string): string {
     // 7. Havolalar - [text](url) -> text
     cleaned = cleaned.replace(/\[(.+?)\]\(.+?\)/g, "$1");
 
-    // 8. Ortiqcha bo'shliqlar va qatorlar
+    // 8. Ikki yoki undan ortiq bo'sh qatorlarni bitta bo'sh qatorga aylantirish
+    // Bu Word'da paragraflar orasida bo'sh joy chiqaradi
+    cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
+
+    // 9. Bitta \n ni Docxtemplater uchun maxsus belgi bilan almashtirish
+    // Docxtemplater linebreaks:true ishlashi uchun \n qoldiramiz
+    // Lekin ikki \n ni paragraf ajratuvchi sifatida ishlatamiz
+
+    // 10. Ortiqcha bo'shliqlarni tozalash (lekin \n saqlanadi)
     cleaned = cleaned.trim();
 
     return cleaned;

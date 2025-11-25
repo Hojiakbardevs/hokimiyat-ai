@@ -504,7 +504,7 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
     }
 
     return (
-      <div className="flex h-screen max-h-screen flex-col shrink-0 w-2/3 bg-linear-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
+      <div className="flex h-full max-h-full w-full flex-col bg-linear-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
         {/* Main Content */}
         <main className="mx-auto w-full flex-1  overflow-hidden">
           <div className="grid h-full   lg:grid-cols-2">

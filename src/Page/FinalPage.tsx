@@ -270,7 +270,13 @@ export function FinalPage() {
     });
 
     const cleanedContent = cleanMarkdown(content || "[Matn kiritilmagan]");
-    doc.setData({ body: cleanedContent });
+
+    // Docxtemplater linebreaks:true ishlatadi
+    // Har bir \n ni Word soft line break ga aylantiradi
+    // Ikki \n\n ni paragraf bo'shlig'i sifatida ishlatadi
+    doc.setData({
+      body: cleanedContent,
+    });
     doc.render();
 
     return doc.getZip().generate({

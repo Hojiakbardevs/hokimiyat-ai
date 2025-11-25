@@ -6,12 +6,13 @@ import LoginPage from "./Page/LoginPage";
 import RegisterPage from "./Page/RegisterPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./Page/NotfoundPage";
+import { HomePage } from "./Page/HomePage";
 
 function App() {
   return (
     <div>
       <Routes>
-        <Route path="/" element={<LoginPage />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route element={<ProtectedRoute />}>
