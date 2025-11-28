@@ -151,7 +151,7 @@ export default function FeaturesSection() {
             <h2
               id="features-heading"
               className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              Hokimiyat AI — Aqlli hujjatlar platformasi
+              Institut AI — Aqlli hujjatlar platformasi
             </h2>
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
               Xavfsizlik, moslashuvchanlik va to'liq nazoratni talab qiluvchi

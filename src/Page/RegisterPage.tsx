@@ -1,5 +1,5 @@
 // src/Page/RegisterPage.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register, refreshToken } from "@/api/auth";
 import { setTokens } from "@/api/client";
@@ -40,6 +40,18 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Theme management
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") || "light";
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    document.documentElement.style.colorScheme = savedTheme;
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

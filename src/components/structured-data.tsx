@@ -2,7 +2,7 @@ export default function StructuredData() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "Hokimiyat Hujjatlarini Avtomatlashtirish Tizimi",
+    name: "Institut Hujjatlarini Avtomatlashtirish Tizimi",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
     inLanguage: "uz",

@@ -1,4 +1,4 @@
-## Hokimiyat AI – Frontend
+## Institut AI – Frontend
 
 Modern React + TypeScript dastur: chat yordamchisi, hujjat generatori (Generate) va yakuniy tahrir/yuklab olish (Final). Backend mavjud bo‘lmasa ham UI darajasida ishlaydi. Dark/Light mavzular, drag-and-drop fayl biriktirish, shablonlar bilan ishlash va soddalashtirilgan tahrir (RichTextEditor) qo‘llangan.
 

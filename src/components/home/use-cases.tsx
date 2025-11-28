@@ -45,9 +45,9 @@ export default function UseCases() {
   const useCases = [
     {
       icon: <GovernmentIcon />,
-      title: "Davlat boshqaruvi va hokimiyat idoralari",
+      title: "Davlat boshqaruvi va Institut idoralari",
       description:
-        "Hokimiyat AI kuniga yuzlab murojaatlarni tahlil qiladi, javob loyihalarini tayyorlaydi va hujjat aylanishini tartibga soladi. Har bir hujjat tizimda saqlanadi va audit orqali tekshiriladi.",
+        "Institut AI kuniga yuzlab murojaatlarni tahlil qiladi, javob loyihalarini tayyorlaydi va hujjat aylanishini tartibga soladi. Har bir hujjat tizimda saqlanadi va audit orqali tekshiriladi.",
       accentColor: "rgba(139, 92, 246, 0.5)",
     },
     {
@@ -126,7 +126,7 @@ export default function UseCases() {
               Qo'llanish sohalari
             </div>
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              Hokimiyat AI — Qayerda ishlaydi?
+              Institut AI — Qayerda ishlaydi?
             </h2>
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
               Sun'iy intellekt davlat boshqaruvini yangi bosqichga olib

@@ -25,6 +25,27 @@ export function clearTokens() {
     localStorage.removeItem("refresh_token");
 }
 
+// Clear all app-related data from localStorage
+export function clearAllAppData() {
+    // List of all localStorage keys used by the app
+    const keysToRemove = [
+        "access_token",
+        "refresh_token",
+        "chat-conversations",
+        "chat-selected-id",
+        "chat-loaded-conversations",
+        "sidebar-collapsed",
+        "sidebar-collapsed-state",
+        "show-document-viewer",
+        "theme"
+    ];
+
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    // Or clear everything (if you don't have other data in localStorage):
+    // localStorage.clear();
+}
+
 function isJson(headers: Headers) {
     const ct = headers.get("content-type") || "";
     return ct.includes("application/json");

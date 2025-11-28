@@ -432,6 +432,35 @@ export default function ChatPage() {
     );
   }
 
+  function renameConversation(id: string) {
+    const conv = conversations.find((c) => c.id === id);
+    if (!conv) return;
+
+    const newTitle = prompt("Yangi nom kiriting:", conv.title);
+    if (!newTitle || newTitle.trim() === "") return;
+
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, title: newTitle.trim() } : c))
+    );
+    toast.success("Nom o'zgartirildi!");
+  }
+
+  function deleteConversation(id: string) {
+    const conv = conversations.find((c) => c.id === id);
+    if (!conv) return;
+
+    if (!confirm(`"${conv.title}" suhbatini o'chirishni xohlaysizmi?`)) return;
+
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+
+    // If deleted conversation was selected, clear selection
+    if (selectedId === id) {
+      setSelectedId(null);
+    }
+
+    toast.success("Suhbat o'chirildi!");
+  }
+
   async function createNewChat() {
     const tempId = "temp-" + Math.random().toString(36).slice(2);
     const item: Conversation = {
@@ -648,6 +677,8 @@ export default function ChatPage() {
         selectedId={selectedId}
         onSelect={(id: string) => setSelectedId(id)}
         togglePin={togglePin}
+        onRename={renameConversation}
+        onDelete={deleteConversation}
         query={query}
         setQuery={setQuery}
         searchRef={searchRef}

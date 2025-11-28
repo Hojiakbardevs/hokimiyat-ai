@@ -1,5 +1,5 @@
 /**
- * Export Service for Hokimiyat AI
+ * Export Service for Institut AI
  * Document statistics and helper functions
  */
 

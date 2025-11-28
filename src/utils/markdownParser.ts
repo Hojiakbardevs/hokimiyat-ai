@@ -1,5 +1,5 @@
 /**
- * Markdown Parser for Hokimiyat AI
+ * Markdown Parser for Institut AI
  * Converts Markdown to structured data for DOCX/PDF generation
  */
 
@@ -99,7 +99,7 @@ export function parseMarkdown(markdown: string): ParsedElement[] {
         elements.push({
             type: 'paragraph',
             content: trimmedLine,
-            alignment: 'justify', // Default hokimiyat standard
+            alignment: 'justify', // Default Institut standard
         });
     }
 

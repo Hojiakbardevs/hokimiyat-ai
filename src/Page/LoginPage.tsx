@@ -1,5 +1,5 @@
 // src/Page/LoginPage.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,18 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation() as any;
   const from = location.state?.from?.pathname || "/chat-assistant";
+
+  // Theme management
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") || "light";
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    document.documentElement.style.colorScheme = savedTheme;
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -45,6 +45,8 @@ interface CustomSidebarProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   togglePin: (id: string) => void;
+  onRename?: (id: string) => void;
+  onDelete?: (id: string) => void;
   query: string;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   searchRef: React.RefObject<HTMLInputElement | null>;
@@ -71,6 +73,8 @@ export function CustomSidebar({
   selectedId,
   onSelect,
   togglePin,
+  onRename,
+  onDelete,
   query,
   setQuery,
   searchRef,
@@ -88,6 +92,7 @@ export function CustomSidebar({
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -141,6 +146,14 @@ export function CustomSidebar({
 
     fetchUserProfile();
   }, [isAuthenticated, navigate]);
+
+  // Load avatar when userProfile changes
+  useEffect(() => {
+    if (userProfile?.id) {
+      const savedAvatar = localStorage.getItem(`user-avatar-${userProfile.id}`);
+      setAvatarUrl(savedAvatar);
+    }
+  }, [userProfile?.id]);
 
   const getUserInitials = () => {
     if (!userProfile) return "??";
@@ -338,10 +351,20 @@ export function CustomSidebar({
 
           {/* User Avatar */}
           <div
-            className="user-avatar grid h-10 w-10 place-items-center rounded-lg text-xs font-bold"
+            className="user-avatar h-10 w-10 overflow-hidden rounded-lg"
             title={getUserFullName()}
             style={{ WebkitTapHighlightColor: "transparent" }}>
-            {getUserInitials()}
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="grid h-full w-full place-items-center text-xs font-bold">
+                {getUserInitials()}
+              </div>
+            )}
           </div>
         </div>
       </motion.aside>
@@ -464,6 +487,8 @@ export function CustomSidebar({
                     active={c.id === selectedId}
                     onSelect={() => onSelect(c.id)}
                     onTogglePin={() => togglePin(c.id)}
+                    onRename={onRename ? () => onRename(c.id) : undefined}
+                    onDelete={onDelete ? () => onDelete(c.id) : undefined}
                   />
                 ))
               )}
@@ -489,6 +514,8 @@ export function CustomSidebar({
                       active={c.id === selectedId}
                       onSelect={() => onSelect(c.id)}
                       onTogglePin={() => togglePin(c.id)}
+                      onRename={onRename ? () => onRename(c.id) : undefined}
+                      onDelete={onDelete ? () => onDelete(c.id) : undefined}
                       showMeta
                     />
                   ))
@@ -581,8 +608,18 @@ export function CustomSidebar({
               </div>
             </div>
             <div className="mt-2 flex items-center gap-2 rounded-xl bg-muted p-2">
-              <div className="user-avatar grid h-8 w-8 place-items-center rounded-full text-xs font-bold">
-                {getUserInitials()}
+              <div className="user-avatar h-8 w-8 overflow-hidden rounded-full">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Profile"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center text-xs font-bold">
+                    {getUserInitials()}
+                  </div>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">
@@ -701,6 +738,8 @@ export function CustomSidebar({
                       active={c.id === selectedId}
                       onSelect={() => onSelect(c.id)}
                       onTogglePin={() => togglePin(c.id)}
+                      onRename={onRename ? () => onRename(c.id) : undefined}
+                      onDelete={onDelete ? () => onDelete(c.id) : undefined}
                     />
                   ))
                 )}
@@ -725,6 +764,8 @@ export function CustomSidebar({
                       active={c.id === selectedId}
                       onSelect={() => onSelect(c.id)}
                       onTogglePin={() => togglePin(c.id)}
+                      onRename={onRename ? () => onRename(c.id) : undefined}
+                      onDelete={onDelete ? () => onDelete(c.id) : undefined}
                       showMeta
                     />
                   ))
@@ -814,8 +855,18 @@ export function CustomSidebar({
                 </div>
               </div>
               <div className="mt-2 flex items-center gap-2 rounded-xl bg-muted p-2">
-                <div className="user-avatar grid h-8 w-8 place-items-center rounded-full text-xs font-bold">
-                  {getUserInitials()}
+                <div className="user-avatar h-8 w-8 overflow-hidden rounded-full">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="grid h-full w-full place-items-center text-xs font-bold">
+                      {getUserInitials()}
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">

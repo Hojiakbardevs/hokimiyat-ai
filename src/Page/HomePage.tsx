@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import CssGridBackground from "@/components/home/css-grid-background";
 import FeaturesSection from "@/components/home/features-section";
 import Footer from "@/components/home/footer";
@@ -20,6 +21,18 @@ import {
 import { Link } from "react-router-dom";
 
 export const HomePage = () => {
+  // Theme management
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") || "light";
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    document.documentElement.style.colorScheme = savedTheme;
+  }, []);
+
   return (
     <>
       <StructuredData />
@@ -55,7 +68,7 @@ export const HomePage = () => {
               {/* Tugmalar - YANGILANGAN */}
               <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 mt-16 w-full sm:w-auto px-4 sm:px-0">
                 <Link to="/chat-assistant" className="w-full sm:w-auto">
-                  <Button 
+                  <Button
                     className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-6 h-[60px] bg-[#1a1d21] hover:bg-[#2a2d31] text-white rounded-xl border-0 dark:bg-primary dark:hover:bg-primary/90 dark:shadow-[0_0_15px_rgba(36,101,237,0.5)] hover:shadow-[0_0_20px_rgba(36,101,237,0.3)] transition-all duration-300 relative overflow-hidden group"
                     aria-label="Dasturni sinab ko'rish">
                     <div className="absolute inset-0 bg-linear-to-r from-primary/0 via-primary/30 to-primary/0 dark:opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -translate-x-full group-hover:translate-x-full"></div>
@@ -70,8 +83,12 @@ export const HomePage = () => {
                     </div>
                   </Button>
                 </Link>
-                <Button 
-                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                <Button
+                  onClick={() =>
+                    document
+                      .getElementById("features")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
                   className="w-full sm:w-auto px-6 py-6 h-[60px] rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-primary dark:hover:border-primary text-[15px] font-semibold text-foreground transition-all duration-300 hover:shadow-lg"
                   aria-label="Batafsil ma'lumot">
                   Batafsil ma'lumot

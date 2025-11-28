@@ -1,5 +1,5 @@
 /**
- * Simple DOCX Generator for Hokimiyat AI
+ * Simple DOCX Generator for Institut AI
  * Uses existing DOCX template and replaces {body} placeholder
  * 
  * Features:

@@ -1,5 +1,5 @@
 // src/api/auth.ts
-import { apiRequest, setTokens, clearTokens } from "./client";
+import { apiRequest, setTokens } from "./client";
 import type { Tokens } from "./client";
 import { API } from "./endpoints";
 
@@ -14,32 +14,21 @@ export interface LoginResponse {
     refresh: string;
 }
 
-// Try JWT token endpoint first, fallback to accounts/login if needed
+// Login using accounts/login endpoint
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
-    try {
-        // First try standard JWT token endpoint
-        // Map phone -> username for SimpleJWT compatibility
-        const jwtPayload = payload.phone && !payload.username
-            ? { username: payload.phone, password: payload.password }
-            : payload;
-        const data = await apiRequest<LoginResponse>(API.AUTH_TOKEN, {
-            method: "POST",
-            body: JSON.stringify(jwtPayload),
-            withAuth: false,
-        });
-        setTokens({ access: data.access, refresh: data.refresh } as Tokens);
-        return data;
-    } catch (error: any) {
-        console.warn("JWT token endpoint failed, trying accounts/login:", error.message);
-        // Fallback to accounts/login if JWT fails (keeps original phone/password)
-        const data = await apiRequest<LoginResponse>(API.ACCOUNTS_LOGIN, {
-            method: "POST",
-            body: JSON.stringify(payload),
-            withAuth: false,
-        });
-        setTokens({ access: data.access, refresh: data.refresh } as Tokens);
-        return data;
-    }
+    // Import clearAllAppData
+    const { clearAllAppData } = await import("./client");
+
+    // Clear all previous user data before login
+    clearAllAppData();
+
+    const data = await apiRequest<LoginResponse>(API.ACCOUNTS_LOGIN, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        withAuth: false,
+    });
+    setTokens({ access: data.access, refresh: data.refresh } as Tokens);
+    return data;
 }
 
 // User registration: prefer /auth/register/ then fallback to /accounts/register/
@@ -83,5 +72,6 @@ export async function refreshToken(refresh: string) {
 
 // No explicit logout endpoint in backend URL list; just clear local tokens.
 export async function logout() {
-    clearTokens();
+    const { clearAllAppData } = await import("./client");
+    clearAllAppData();
 }

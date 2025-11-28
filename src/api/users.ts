@@ -50,3 +50,26 @@ export async function listUsers(): Promise<UserProfile[]> {
 export async function getUser(id: string | number): Promise<UserProfile> {
     return apiRequest<UserProfile>(`${API.USERS}${id}/`, { method: "GET" });
 }
+
+// Get current user profile (alias for getMe)
+export async function getUserProfile(): Promise<UserProfile> {
+    return getMe();
+}
+
+// Update user profile
+export async function updateUserProfile(
+    id: string | number,
+    data: { first_name?: string; last_name?: string }
+): Promise<UserProfile> {
+    console.log("📝 Updating user profile:", id, data);
+    return apiRequest<UserProfile>(`${API.USERS}${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+    });
+}
+
+// Delete user
+export async function deleteUser(id: string | number): Promise<void> {
+    console.log("🗑️ Deleting user:", id);
+    return apiRequest<void>(`${API.USERS}${id}/`, { method: "DELETE" });
+}

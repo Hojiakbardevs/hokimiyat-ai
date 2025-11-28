@@ -4,6 +4,7 @@ import ChatPage from "./Page/ChatPage";
 import { FinalPage } from "./Page/FinalPage";
 import LoginPage from "./Page/LoginPage";
 import RegisterPage from "./Page/RegisterPage";
+import ProfilePage from "./Page/ProfilePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./Page/NotfoundPage";
 import { HomePage } from "./Page/HomePage";
@@ -18,6 +19,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/chat-assistant" element={<ChatPage />} />
           <Route path="/final" element={<FinalPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -11,8 +11,8 @@ export default function Footer() {
           <div className="space-y-4">
             <div className="flex items-center">
               {" "}
-              <img src={Logos} alt="Hokimiyat AI" className="w-12" />
-              <h3 className="text-lg font-bold">Hokimiyat AI</h3>
+              <img src={Logos} alt="Institut AI" className="w-12" />
+              <h3 className="text-lg font-bold">Institut AI</h3>
             </div>
             <p className="text-sm text-muted-foreground">
               Davlat idoralari va yirik tashkilotlar uchun mo‘ljallangan,
@@ -51,7 +51,7 @@ export default function Footer() {
                   <Link
                     to="#government"
                     className="text-muted-foreground hover:text-foreground">
-                    Hokimiyatlar uchun
+                    Institutlar uchun
                   </Link>
                 </li>
               </ul>
@@ -136,7 +136,7 @@ export default function Footer() {
         {/* Pastki qism */}
         <div className="mt-12 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} Hokimiyat AI. Barcha huquqlar himoyalangan.
+            © {currentYear} Institut AI. Barcha huquqlar himoyalangan.
           </p>
           <div className="flex gap-4">
             {/* Linklarni keyin haqiqiy sahifalarga almashtirasiz */}

@@ -314,22 +314,24 @@ export function FinalPage() {
       // Shuning uchun hozirgi yozuv lotin bo'lsa 1, kirill bo'lsa 0 yuboramiz
       const targetType = currentScript === "latin" ? "1" : "0";
 
-      const response = await fetch(
-        "http://192.168.95.133:8000/api/v1/documents/tilim/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: content,
-            type: targetType,
-          }),
-        }
-      );
+      // Use tilim.uz API directly or your backend proxy
+      const apiUrl = import.meta.env.DEV
+        ? "/api/v1/documents/tilim/" // Development: through Vite proxy
+        : "http://10.10.0.60/api/v1/documents/tilim/"; // Production: direct backend
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          data: content,
+          type: targetType,
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error("Konvertatsiya xatolik");
+        throw new Error(`Server xatosi: ${response.status}`);
       }
 
       const result = await response.json();
@@ -347,7 +349,9 @@ export function FinalPage() {
       }
     } catch (error) {
       console.error("Convert error:", error);
-      toast.error("❌ Konvertatsiya xatolik");
+      toast.error(
+        "❌ Konvertatsiya xatolik. Backend server ishlamayapti yoki tilim endpoint mavjud emas."
+      );
     } finally {
       setIsConverting(false);
     }

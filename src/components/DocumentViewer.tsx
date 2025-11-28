@@ -14,6 +14,7 @@ import {
   Trash2,
   FileUp,
   Sparkles,
+  FileEdit,
 } from "lucide-react";
 import { createDocument } from "@/api/documents";
 import { toast } from "sonner";
@@ -33,6 +34,13 @@ import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import RichTextEditor from "@/components/rich-text-editor";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -118,6 +126,18 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
     const location = useLocation();
     const state = location.state as { file?: File; fileName?: string } | null;
 
+    // Theme management
+    useEffect(() => {
+      const savedTheme = localStorage.getItem("theme") || "light";
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      document.documentElement.setAttribute("data-theme", savedTheme);
+      document.documentElement.style.colorScheme = savedTheme;
+    }, [location.pathname]);
+
     // LocalStorage key
     const STORAGE_KEY = "document-viewer-state";
 
@@ -187,6 +207,8 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
     >("idle");
     const [animatedText, setAnimatedText] = useState("");
     const [pendingReplacement, setPendingReplacement] = useState("");
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editDraft, setEditDraft] = useState("");
 
     // Save to localStorage whenever important state changes
     useEffect(() => {
@@ -886,6 +908,17 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
                     </Button>
 
                     <Button
+                      onClick={() => {
+                        setEditDraft(generatedText);
+                        setShowEditModal(true);
+                      }}
+                      variant="outline"
+                      size="sm">
+                      <FileEdit className="h-4 w-4" />
+                      Tahrirlash
+                    </Button>
+
+                    <Button
                       onClick={() =>
                         navigate("/final", {
                           state: {
@@ -1032,6 +1065,68 @@ export const DocumentViewer = forwardRef<DocumentViewerHandle, {}>(
             </div>
           </div>
         </main>
+
+        {/* Rich Text Editor Modal for editing generated text */}
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>AI natijani tahrirlash - Rich Editor</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-auto">
+              <RichTextEditor
+                content={editDraft}
+                onChange={setEditDraft}
+                placeholder="AI natijani tahrirlang..."
+                showStats={true}
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-4 border-t">
+              <Button
+                onClick={() => {
+                  setGeneratedText(editDraft);
+                  setShowEditModal(false);
+                  toast.success("O'zgarishlar saqlandi!");
+                }}
+                className="bg-blue-600 hover:bg-blue-700">
+                <FileText className="h-4 w-4" />
+                Saqlash
+              </Button>
+              <Button
+                onClick={() => {
+                  setGeneratedText(editDraft);
+                  setShowEditModal(false);
+                  navigate("/final", {
+                    state: {
+                      content: editDraft,
+                      title: uploadedFile?.name || "",
+                      templateId:
+                        detectedTemplate || selectedTemplate || "auto_detect",
+                      documentData: {
+                        template_type:
+                          detectedTemplate || selectedTemplate || "ariza",
+                        language_code: "uz",
+                        script_type: "latin",
+                        description: description || undefined,
+                        status: "completed",
+                      },
+                    },
+                  });
+                }}
+                variant="outline">
+                <Sparkles className="h-4 w-4" />
+                Saqlash va Finalga o'tish
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditDraft(generatedText);
+                }}
+                variant="ghost">
+                Bekor qilish
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
