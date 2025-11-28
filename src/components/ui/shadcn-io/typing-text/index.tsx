@@ -203,7 +203,7 @@ const TypingText = ({
           shouldHideCursor ? "hidden" : ""
         } ${
           cursorCharacter === "|"
-            ? `h-5 w-[1px] translate-y-1 bg-foreground ${cursorClassName}`
+            ? `h-5 w-px translate-y-1 bg-foreground ${cursorClassName}`
             : `ml-1 ${cursorClassName}`
         }`}>
         {cursorCharacter === "|" ? "" : cursorCharacter}
